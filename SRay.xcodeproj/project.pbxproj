@@ -1,0 +1,487 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3AF28A4ACC421A4F4355DEE7 /* SRayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111847B87F5DB0CBCE34CB0F /* SRayApp.swift */; };
+		9BD1D34ED71EFE9377B5FD87 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60343CAB011D3726A39CBB58 /* Foundation.framework */; };
+		A86DB3928B4D0FE64F24FE34 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7ED086F619C81C93B5995B09 /* Foundation.framework */; };
+		BB52BAE59CF6A08F7931B279 /* SRayUI in Frameworks */ = {isa = PBXBuildFile; productRef = A24B08E88F4482B0D91E355B /* SRayUI */; };
+		C489BA0363B1176129F8FAE8 /* SRayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111847B87F5DB0CBCE34CB0F /* SRayApp.swift */; };
+		CFC62A2B751038AD0A17F431 /* SRayUI in Frameworks */ = {isa = PBXBuildFile; productRef = 1C7BA0CE72FDF2CA398F6B98 /* SRayUI */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		111847B87F5DB0CBCE34CB0F /* SRayApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SRayApp.swift; path = Apps/SRay/SRayApp.swift; sourceTree = SOURCE_ROOT; };
+		60343CAB011D3726A39CBB58 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/XROS.platform/Developer/SDKs/XROS2.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		7AA52D16DA0F4828179CA668 /* SRay-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SRay-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7ED086F619C81C93B5995B09 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		A47AD3EF62D516C774C3DCE6 /* SRay-visionOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SRay-visionOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9965EC8994F9139DE1308AB1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9BD1D34ED71EFE9377B5FD87 /* Foundation.framework in Frameworks */,
+				CFC62A2B751038AD0A17F431 /* SRayUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BD5ADCDA2B5D80B21B58B69C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A86DB3928B4D0FE64F24FE34 /* Foundation.framework in Frameworks */,
+				BB52BAE59CF6A08F7931B279 /* SRayUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		31A3DD8A205D011673EF18DD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				6A730D8A83730560C4AE6E39 /* iOS */,
+				43DE5E4D2BFD5EA38BC70459 /* visionOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		43DE5E4D2BFD5EA38BC70459 /* visionOS */ = {
+			isa = PBXGroup;
+			children = (
+				60343CAB011D3726A39CBB58 /* Foundation.framework */,
+			);
+			name = visionOS;
+			sourceTree = "<group>";
+		};
+		45521DB91152EC064637A695 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7AA52D16DA0F4828179CA668 /* SRay-iOS.app */,
+				A47AD3EF62D516C774C3DCE6 /* SRay-visionOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		58E5DEAE073B7894917D1AFD /* Apps */ = {
+			isa = PBXGroup;
+			children = (
+				B2A15465CC2757D827ECAD28 /* SRay */,
+			);
+			name = Apps;
+			sourceTree = "<group>";
+		};
+		6136B141296EE4B4AB0147FC = {
+			isa = PBXGroup;
+			children = (
+				45521DB91152EC064637A695 /* Products */,
+				31A3DD8A205D011673EF18DD /* Frameworks */,
+				58E5DEAE073B7894917D1AFD /* Apps */,
+			);
+			sourceTree = "<group>";
+		};
+		6A730D8A83730560C4AE6E39 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				7ED086F619C81C93B5995B09 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		B2A15465CC2757D827ECAD28 /* SRay */ = {
+			isa = PBXGroup;
+			children = (
+				111847B87F5DB0CBCE34CB0F /* SRayApp.swift */,
+			);
+			name = SRay;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0367586917EAF6346361A254 /* SRay-visionOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6120000AF9D65CF26478CFA7 /* Build configuration list for PBXNativeTarget "SRay-visionOS" */;
+			buildPhases = (
+				580C3B754EA0E22DED73607C /* Sources */,
+				9965EC8994F9139DE1308AB1 /* Frameworks */,
+				2A8D07942E885DF69C5D479B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SRay-visionOS";
+			packageProductDependencies = (
+				1C7BA0CE72FDF2CA398F6B98 /* SRayUI */,
+			);
+			productName = "SRay-visionOS";
+			productReference = A47AD3EF62D516C774C3DCE6 /* SRay-visionOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		7458D1447ED38D2568901E51 /* SRay-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ED40420CDB10F8CFF591DF4E /* Build configuration list for PBXNativeTarget "SRay-iOS" */;
+			buildPhases = (
+				114B74CBB3C8ADB3DC4957CB /* Sources */,
+				BD5ADCDA2B5D80B21B58B69C /* Frameworks */,
+				B192C353F56217AC9C12DABF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SRay-iOS";
+			packageProductDependencies = (
+				A24B08E88F4482B0D91E355B /* SRayUI */,
+			);
+			productName = "SRay-iOS";
+			productReference = 7AA52D16DA0F4828179CA668 /* SRay-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7A9453105456F95193D52FB7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = F4A204920C3A06A827506F6D /* Build configuration list for PBXProject "SRay" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 6136B141296EE4B4AB0147FC;
+			minimizedProjectReferenceProxies = 0;
+			packageReferences = (
+				4C9AE47FB68331D2B8A289D5 /* XCLocalSwiftPackageReference "SRayKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 45521DB91152EC064637A695 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7458D1447ED38D2568901E51 /* SRay-iOS */,
+				0367586917EAF6346361A254 /* SRay-visionOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		2A8D07942E885DF69C5D479B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B192C353F56217AC9C12DABF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		114B74CBB3C8ADB3DC4957CB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C489BA0363B1176129F8FAE8 /* SRayApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		580C3B754EA0E22DED73607C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3AF28A4ACC421A4F4355DEE7 /* SRayApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		74DB210FBE0C28AFDF30510F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SRay;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.azizbekasadov.sray;
+				PRODUCT_NAME = SRay;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		95E565A91F7C4A983E5334DB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AC615A6FF08BE804985740F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SRay;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.azizbekasadov.sray.vision;
+				PRODUCT_NAME = SRay;
+				SDKROOT = xros;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		D6807EDE55027A1FA21E503F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SRay;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.azizbekasadov.sray.vision;
+				PRODUCT_NAME = SRay;
+				SDKROOT = xros;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		E3BE33DF4F1483195261BD84 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SRay;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.azizbekasadov.sray;
+				PRODUCT_NAME = SRay;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		EDBC3F0753E6D2665F7B81FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6120000AF9D65CF26478CFA7 /* Build configuration list for PBXNativeTarget "SRay-visionOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D6807EDE55027A1FA21E503F /* Release */,
+				AC615A6FF08BE804985740F0 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ED40420CDB10F8CFF591DF4E /* Build configuration list for PBXNativeTarget "SRay-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E3BE33DF4F1483195261BD84 /* Release */,
+				74DB210FBE0C28AFDF30510F /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F4A204920C3A06A827506F6D /* Build configuration list for PBXProject "SRay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				95E565A91F7C4A983E5334DB /* Debug */,
+				EDBC3F0753E6D2665F7B81FB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		4C9AE47FB68331D2B8A289D5 /* XCLocalSwiftPackageReference "SRayKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SRayKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1C7BA0CE72FDF2CA398F6B98 /* SRayUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C9AE47FB68331D2B8A289D5 /* XCLocalSwiftPackageReference "SRayKit" */;
+			productName = SRayUI;
+		};
+		A24B08E88F4482B0D91E355B /* SRayUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C9AE47FB68331D2B8A289D5 /* XCLocalSwiftPackageReference "SRayKit" */;
+			productName = SRayUI;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 7A9453105456F95193D52FB7 /* Project object */;
+}
