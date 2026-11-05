@@ -4,7 +4,7 @@ Contributions from Deaf and hard-of-hearing people, ASL users, designers, resear
 
 ## Before starting
 
-Read the PRD and linked issue. Discuss scope changes in an issue before implementation. Never post private conversations, participant recordings, access tokens or identifiable study data. Use synthetic examples and fixtures. For vulnerabilities use the private route in SECURITY.md.
+Read the PRD, linked issue and [engineering conventions](docs/ENGINEERING.md). Discuss scope changes in an issue before implementation. Never post private conversations, participant recordings, access tokens or identifiable study data. Use synthetic examples and fixtures. For vulnerabilities use the private route in SECURITY.md.
 
 ## Branches and commits
 
