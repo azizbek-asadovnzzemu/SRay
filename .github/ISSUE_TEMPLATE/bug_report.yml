@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible defect using synthetic data.
+labels: [bug]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: Do not include private conversation content.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Device, OS and app revision
+    validations:
+      required: true

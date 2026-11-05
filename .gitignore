@@ -1,0 +1,13 @@
+# Apple development
+.DS_Store
+.build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcresult
+*.ipa
+*.dSYM
+# Local configuration
+.env
+.env.*
+!.env.example

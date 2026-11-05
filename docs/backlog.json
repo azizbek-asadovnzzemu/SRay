@@ -1,0 +1,660 @@
+[
+  {
+    "key": "foundation",
+    "title": "Establish open-source repository and contribution governance",
+    "phase": "Foundation",
+    "priority": "P0",
+    "area": "community",
+    "refs": "P0-14",
+    "depends": [],
+    "criteria": [
+      "Publish Apache-2.0 for original material, NOTICE and third-party provenance boundaries.",
+      "Provide README, contribution, conduct, governance, security and support guides plus issue/PR templates.",
+      "Create main/develop, enable private vulnerability reporting and enforce passing checks plus one independent approval.",
+      "Verify bootstrap authorship uses the owner identity, and original prototype remains separate."
+    ]
+  },
+  {
+    "key": "provider",
+    "title": "Verify Sign MT production access and service contract",
+    "phase": "Feasibility",
+    "priority": "P0",
+    "area": "translation",
+    "refs": "P0-04, P0-08, P0-09",
+    "depends": [
+      "foundation"
+    ],
+    "criteria": [
+      "Record authorized endpoint, access terms, quota/cost, retention and version policy.",
+      "Pin inspected source revision; document language identifiers, request schema, errors and response pose format.",
+      "Validate synthetic English-to-ASL requests; no real conversation input.",
+      "Record blockers explicitly; do not infer public API authorization from client code."
+    ]
+  },
+  {
+    "key": "provenance",
+    "title": "Audit prototype, dependencies and assets before source migration",
+    "phase": "Feasibility",
+    "priority": "P0",
+    "area": "legal",
+    "refs": "P0-14",
+    "depends": [
+      "foundation"
+    ],
+    "criteria": [
+      "Inventory candidate files with origin, author, license, modifications and redistribution obligations.",
+      "Identify original reusable code separately from Sign MT code/configuration and distribution archives.",
+      "Publish a reviewed import allowlist and required notices; no blanket Apache relicensing."
+    ]
+  },
+  {
+    "key": "speech-matrix",
+    "title": "Validate offline English speech support on all platforms",
+    "phase": "Feasibility",
+    "priority": "P0",
+    "area": "captions",
+    "refs": "P0-01",
+    "depends": [
+      "foundation"
+    ],
+    "criteria": [
+      "Test representative Vision Pro, iPhone and iPad with local English recognition and network disabled.",
+      "Document minimum OS/hardware, asset downloads, denied permissions and unsupported-device behavior.",
+      "Publish capability matrix and reproduce a 30-minute offline session without cloud fallback."
+    ]
+  },
+  {
+    "key": "pose-contract",
+    "title": "Validate pose decoding and native rendering feasibility",
+    "phase": "Feasibility",
+    "priority": "P0",
+    "area": "playback",
+    "refs": "P0-06",
+    "depends": [
+      "provider"
+    ],
+    "criteria": [
+      "Capture licensed synthetic fixtures and document coordinate system, timing, handedness and face/hand fields.",
+      "Establish byte/frame/allocation limits and reject malformed or non-finite values.",
+      "Demonstrate native playback feasibility on each platform; mark spike code as experimental."
+    ]
+  },
+  {
+    "key": "evaluation-protocol",
+    "title": "Freeze caption and ASL evaluation protocol",
+    "phase": "Feasibility",
+    "priority": "P0",
+    "area": "research",
+    "refs": "PRD section 10",
+    "depends": [
+      "provider",
+      "speech-matrix",
+      "pose-contract"
+    ],
+    "criteria": [
+      "Agree held-out caption corpus and ASL semantic categories with an ASL evaluation lead.",
+      "Define consent, compensation, recruitment, scoring and severe-error adjudication.",
+      "Approve or revise proposed numeric thresholds before measurement; record baseline and protocol version."
+    ]
+  },
+  {
+    "key": "app-targets",
+    "title": "Create native Apple application targets and shared modules",
+    "phase": "Foundation",
+    "priority": "P0",
+    "area": "architecture",
+    "refs": "P0-11, P0-14",
+    "depends": [
+      "provenance",
+      "speech-matrix"
+    ],
+    "criteria": [
+      "Create iOS/iPadOS and visionOS targets with shared conversation, speech, translation and pose boundaries.",
+      "Import only approved original prototype files with provenance/history references and preserved notices.",
+      "Resolve local package paths and dependencies from a clean clone.",
+      "Document exact unsigned build commands and verified toolchain; no production web DOM bridge."
+    ]
+  },
+  {
+    "key": "swift-ci",
+    "title": "Add reproducible builds and behavior tests to CI",
+    "phase": "Foundation",
+    "priority": "P0",
+    "area": "ci",
+    "refs": "P0-13, P0-14",
+    "depends": [
+      "app-targets"
+    ],
+    "criteria": [
+      "Build all platform targets and run package/app tests on runners with required runtimes.",
+      "Use least-privilege permissions, pinned actions and no secrets for untrusted fork PRs.",
+      "Make named build/test checks required once passing; attach failure artifacts without content or credentials.",
+      "Prove CI detects an intentionally failing behavior test before reverting the probe."
+    ]
+  },
+  {
+    "key": "speech-lifecycle",
+    "title": "Implement isolated speech lifecycle and permission handling",
+    "phase": "Conversation core",
+    "priority": "P0",
+    "area": "captions",
+    "refs": "P0-01, P0-02, P0-12",
+    "depends": [
+      "app-targets"
+    ],
+    "criteria": [
+      "Use one injectable microphone owner and bounded recognition stream with enforced on-device processing.",
+      "Test stop during authorization, stream finish/failure, duplicate starts and recognizer restarts.",
+      "Remove audio taps, end requests and deactivate owned audio resources on termination.",
+      "Request permissions in context; denied/restricted/unavailable states never start recording."
+    ]
+  },
+  {
+    "key": "utterances",
+    "title": "Implement finalized utterance identity and segmentation",
+    "phase": "Conversation core",
+    "priority": "P0",
+    "area": "captions",
+    "refs": "P0-03, P0-04",
+    "depends": [
+      "speech-lifecycle"
+    ],
+    "criteria": [
+      "Partial updates stay local and finalization deduplicates by session/utterance identity.",
+      "Apply approved 280-grapheme/15-second bounds without silent truncation or lost negation.",
+      "Exclude segments crossing transmission state boundaries, including delayed final callbacks.",
+      "Test Unicode, long speech, corrections and restart overlap using production components."
+    ]
+  },
+  {
+    "key": "session-gate",
+    "title": "Enforce automatic ASL enable, pause and resume boundaries",
+    "phase": "Conversation core",
+    "priority": "P0",
+    "area": "privacy",
+    "refs": "P0-05, P0-12",
+    "depends": [
+      "utterances"
+    ],
+    "criteria": [
+      "Start captions with ASL off; explicit enable affects future wholly eligible utterances only.",
+      "Close dispatch gate before pause acknowledgement, invalidate epochs, cancel in-flight work and ignore late results.",
+      "Resume never uploads paused or pre-enable speech; stop and interruption cannot revive sessions.",
+      "Use deterministic race tests covering dispatch, callback, cancellation and multiple windows."
+    ]
+  },
+  {
+    "key": "service-adapter",
+    "title": "Implement typed Sign MT translation adapter",
+    "phase": "Native experience",
+    "priority": "P0",
+    "area": "translation",
+    "refs": "P0-04, P0-08",
+    "depends": [
+      "provider",
+      "app-targets"
+    ],
+    "criteria": [
+      "Encode approved English/ASL contract and decode bounded responses into typed results.",
+      "Handle timeout, 429/Retry-After, authorization, malformed data and allowed HTTPS redirects.",
+      "No fallback provider or automatic resubmission; use synthetic contract fixtures and cancellable requests.",
+      "Exclude transcript-bearing URLs and bodies from logs, diagnostics and disk caches."
+    ]
+  },
+  {
+    "key": "pipeline",
+    "title": "Bound translation and playback queues end to end",
+    "phase": "Conversation core",
+    "priority": "P0",
+    "area": "translation",
+    "refs": "P0-04, P0-08",
+    "depends": [
+      "session-gate",
+      "service-adapter",
+      "pose-contract"
+    ],
+    "criteria": [
+      "At most two utterances await first frame including queued/in-flight/ready work; at most one request and one ready pose.",
+      "Expire waiting work at ten seconds from finalization, ignore late results and mark every omission.",
+      "Preserve order without interrupting active signed phrases; reject incoming work when capacity is full.",
+      "Test slow service, slow playback, burst input, expiry and resume; include queue wait in latency."
+    ]
+  },
+  {
+    "key": "renderer",
+    "title": "Implement native skeleton playback with local replay",
+    "phase": "Native experience",
+    "priority": "P0",
+    "area": "playback",
+    "refs": "P0-06",
+    "depends": [
+      "pose-contract",
+      "app-targets"
+    ],
+    "criteria": [
+      "Preserve verified timing, handedness and available non-manual data on all platforms.",
+      "Reject invalid/oversized poses and prevent cropped signing space.",
+      "Provide pause and local replay without network calls.",
+      "Budget active pose, one ready pose and one replay result; do not evict unplayed work silently."
+    ]
+  },
+  {
+    "key": "privacy-controls",
+    "title": "Implement disclosures and visible transmission controls",
+    "phase": "Conversation core",
+    "priority": "P0",
+    "area": "privacy",
+    "refs": "P0-05, P0-09",
+    "depends": [
+      "session-gate",
+      "provider"
+    ],
+    "criteria": [
+      "Distinguish local captions, online transmission, paused, unavailable and interrupted states with text and symbols.",
+      "Disclose provider, text sent, retention and already-sent request limitation before enabling ASL.",
+      "Expose Pause ASL, Resume ASL and End Conversation as distinct accessible actions.",
+      "Verify ordinary failures use actionable inline feedback and never re-enable transmission automatically."
+    ]
+  },
+  {
+    "key": "ephemeral",
+    "title": "Enforce ephemeral content and diagnostic redaction",
+    "phase": "Conversation core",
+    "priority": "P0",
+    "area": "privacy",
+    "refs": "P0-09, P0-10",
+    "depends": [
+      "app-targets",
+      "service-adapter"
+    ],
+    "criteria": [
+      "Bound transcript memory to latest ten minutes or 200 utterances and poses to approved memory budget.",
+      "Clear conversation content and temporary files on end; no persistent URL cache, cloud sync or clipboard writes.",
+      "Redact app-switcher previews and inspect app/crash/network diagnostics for content leakage.",
+      "Use synthetic sentinel transcripts to test log, cache and file paths."
+    ]
+  },
+  {
+    "key": "caption-view",
+    "title": "Build readable live captions and modality selection",
+    "phase": "Native experience",
+    "priority": "P0",
+    "area": "accessibility",
+    "refs": "P0-03, P0-07",
+    "depends": [
+      "utterances",
+      "app-targets"
+    ],
+    "criteria": [
+      "Render stable partial/final utterances without duplicates, preserving reader scroll position.",
+      "Offer return-to-live, adjustable caption text and captions/signs/both modes.",
+      "Hidden captions remain available and processing is independent of translation connectivity.",
+      "Test largest accessibility text sizes and screen-reader focus under continuous updates."
+    ]
+  },
+  {
+    "key": "iphone",
+    "title": "Build adaptive iPhone conversation experience",
+    "phase": "Native experience",
+    "priority": "P0",
+    "area": "ios",
+    "refs": "P0-11",
+    "depends": [
+      "caption-view",
+      "privacy-controls",
+      "pipeline",
+      "renderer"
+    ],
+    "criteria": [
+      "Provide reachable session controls in portrait and landscape with safe-area compliance.",
+      "Support native controls, 44-point touch targets, semantic colors and no clipped content at maximum text sizes.",
+      "Validate full start/enable/pause/replay/end flow on minimum and representative current hardware."
+    ]
+  },
+  {
+    "key": "ipad",
+    "title": "Build resizable iPad conversation experience",
+    "phase": "Native experience",
+    "priority": "P0",
+    "area": "ipados",
+    "refs": "P0-11",
+    "depends": [
+      "caption-view",
+      "privacy-controls",
+      "pipeline",
+      "renderer"
+    ],
+    "criteria": [
+      "Adapt content and controls across supported narrow/wide windows and orientations.",
+      "Support hardware keyboard, pointer, VoiceOver and Switch Control without gesture-only actions.",
+      "Preserve one session while resizing and maintain visible pause control."
+    ]
+  },
+  {
+    "key": "visionpro",
+    "title": "Build native Vision Pro conversation windows",
+    "phase": "Native experience",
+    "priority": "P0",
+    "area": "visionos",
+    "refs": "P0-11",
+    "depends": [
+      "caption-view",
+      "privacy-controls",
+      "pipeline",
+      "renderer"
+    ],
+    "criteria": [
+      "Use adjustable user-positioned windows without required immersive space or person tracking.",
+      "Verify gaze/pinch operation, signing distance, window size and physical conversation visibility.",
+      "Additional windows share one microphone/session and cannot revive ended sessions.",
+      "Record physical Vision Pro usability and comfort checks."
+    ]
+  },
+  {
+    "key": "interruptions",
+    "title": "Validate background, audio-route and interruption recovery",
+    "phase": "Conversation core",
+    "priority": "P0",
+    "area": "captions",
+    "refs": "P0-12",
+    "depends": [
+      "speech-lifecycle",
+      "session-gate",
+      "iphone",
+      "ipad",
+      "visionpro"
+    ],
+    "criteria": [
+      "Stop capture/transmission on background, lock and interruption; require explicit restart.",
+      "Test audio route change, permission revocation, window closure and repeated rapid stop/start.",
+      "No orphan microphone, task, request, stale output or duplicated caption remains."
+    ]
+  },
+  {
+    "key": "accessibility",
+    "title": "Audit complete accessibility flows across all platforms",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "accessibility",
+    "refs": "P0-11",
+    "depends": [
+      "iphone",
+      "ipad",
+      "visionpro"
+    ],
+    "criteria": [
+      "Measure conversation text contrast at least 4.5:1 and verify largest Dynamic Type without clipping.",
+      "Complete core flow using VoiceOver, Switch Control and supported keyboard/pointer/gaze input.",
+      "Respect reduced motion/transparency; preserve meaningful signing with explicit pause and caption alternative.",
+      "Record findings and close every critical/high accessibility defect."
+    ]
+  },
+  {
+    "key": "caption-study",
+    "title": "Benchmark offline caption accuracy and latency",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "research",
+    "refs": "PRD section 10",
+    "depends": [
+      "evaluation-protocol",
+      "interruptions"
+    ],
+    "criteria": [
+      "Evaluate held-out utterances and varied speakers under specified quiet/noise conditions.",
+      "Measure WER, word-end-to-partial p95, cold start and 30-minute offline behavior per platform.",
+      "Publish aggregate evidence with denominators, versions and failures, without participant content."
+    ]
+  },
+  {
+    "key": "asl-study",
+    "title": "Validate ASL skeleton comprehension with Deaf fluent users",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "research",
+    "refs": "P0-06, PRD section 10",
+    "depends": [
+      "evaluation-protocol",
+      "renderer",
+      "iphone",
+      "ipad",
+      "visionpro"
+    ],
+    "criteria": [
+      "Evaluate 120 held-out messages with at least eight fluent Deaf ASL participants and three evaluations per message.",
+      "Test signs without captions first; score categories and adjudicate severe meaning reversals.",
+      "Meet approved comprehension gates or block ASL release and record remediation.",
+      "Publish consented aggregate findings, uncertainty and limitations; protect participant identity."
+    ]
+  },
+  {
+    "key": "reliability",
+    "title": "Run sustained-use, latency and beta reliability validation",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "quality",
+    "refs": "P0-13, PRD section 10",
+    "depends": [
+      "caption-study",
+      "asl-study",
+      "accessibility",
+      "interruptions"
+    ],
+    "criteria": [
+      "Measure first-frame latency including playback wait, timeout/error/omission rates and approved service quota.",
+      "Run 30-minute hardware sessions, inspect thermal/memory/battery behavior and \u2265200 consented beta sessions.",
+      "Count failures and queue drops, document sample limitations and resolve blocking defects."
+    ]
+  },
+  {
+    "key": "operations",
+    "title": "Document service outage, security and release response",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "operations",
+    "refs": "P0-08, P0-13",
+    "depends": [
+      "service-adapter",
+      "privacy-controls"
+    ],
+    "criteria": [
+      "Reproduce outages with synthetic inputs and provide captions-only recovery.",
+      "Document maintainer support, content-free monitoring, provider-change revalidation and ASL disable/rollback procedure.",
+      "Verify feature gates never enable transmission without user action; run an outage drill."
+    ]
+  },
+  {
+    "key": "distribution",
+    "title": "Review licensing, privacy and distribution readiness",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "legal",
+    "refs": "P0-09, P0-14",
+    "depends": [
+      "provenance",
+      "provider",
+      "ephemeral",
+      "operations"
+    ],
+    "criteria": [
+      "Reconcile Apache originals and all retained notices against final file/dependency inventory.",
+      "Confirm provider rights/retention, required privacy manifests and accurate store disclosures.",
+      "Record owner decisions on distribution territories and monetization before submission.",
+      "Do not claim local-only processing for text that is sent to Sign MT."
+    ]
+  },
+  {
+    "key": "portfolio",
+    "title": "Publish reproducible setup, real screenshots and release evidence",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "docs",
+    "refs": "P0-14",
+    "depends": [
+      "swift-ci",
+      "reliability",
+      "distribution"
+    ],
+    "criteria": [
+      "Validate setup from a clean checkout and update exact platform build/test commands.",
+      "Capture real approved-device screenshots using synthetic content and explain current limitations.",
+      "Link architecture, tested support matrix, accessibility/ASL evidence and contributor entry points."
+    ]
+  },
+  {
+    "key": "release",
+    "title": "Complete release checklist and reviewed develop-to-main promotion",
+    "phase": "Validation",
+    "priority": "P0",
+    "area": "release",
+    "refs": "PRD section 14",
+    "depends": [
+      "portfolio",
+      "operations",
+      "distribution",
+      "reliability"
+    ],
+    "criteria": [
+      "Link evidence for every P0 and all unresolved risks; no critical/high blocker remains.",
+      "Require independent approval and successful checks on release candidate.",
+      "Prepare chore: release PR from develop to main and use merge commit, without tags.",
+      "Do not merge or submit an app automatically as part of issue creation."
+    ]
+  },
+  {
+    "key": "corrections",
+    "title": "Add explicit caption correction and resubmission",
+    "phase": "Later",
+    "priority": "P1",
+    "area": "captions",
+    "refs": "P1-01",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Editing never silently uploads text; explicit resubmission targets selected utterance.",
+      "Identify corrected results and test stale responses against the corrected revision."
+    ]
+  },
+  {
+    "key": "speed",
+    "title": "Add validated signing playback-rate controls",
+    "phase": "Later",
+    "priority": "P1",
+    "area": "playback",
+    "refs": "P1-02",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Evaluate intelligibility at each offered rate and retain tested normal default.",
+      "Rate changes preserve timing/order and do not alter transmission state."
+    ]
+  },
+  {
+    "key": "history",
+    "title": "Design opt-in local history and export",
+    "phase": "Later",
+    "priority": "P1",
+    "area": "privacy",
+    "refs": "P1-03",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Separate privacy review defines retention, protection, deletion and export preview.",
+      "Default remains ephemeral; enabling history requires explicit consent and tests."
+    ]
+  },
+  {
+    "key": "coreml",
+    "title": "Evaluate offline ASL inference with Core ML",
+    "phase": "Later",
+    "priority": "P2",
+    "area": "translation",
+    "refs": "PRD P2",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Identify licensed model/data and demonstrate reproducible conversion and supported operations.",
+      "Benchmark memory, energy, thermal behavior and latency on supported device classes.",
+      "Meet ASL comprehension gate; offline mode never silently changes to remote inference."
+    ]
+  },
+  {
+    "key": "dsgs",
+    "title": "Evaluate German to Swiss-German Sign Language",
+    "phase": "Later",
+    "priority": "P2",
+    "area": "languages",
+    "refs": "PRD P2",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Confirm target language/variant with community and verify provider/model coverage.",
+      "Establish licensed datasets and independent pair-specific evaluation before support claims."
+    ]
+  },
+  {
+    "key": "russian",
+    "title": "Evaluate Russian to Russian Sign Language",
+    "phase": "Later",
+    "priority": "P2",
+    "area": "languages",
+    "refs": "PRD P2",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Confirm target variant, corpus rights and provider/model support.",
+      "Define fluent-user evaluation and verified language-pair capability gating."
+    ]
+  },
+  {
+    "key": "uzbek",
+    "title": "Define Uzbek input and local signed-language support with community",
+    "phase": "Later",
+    "priority": "P2",
+    "area": "languages",
+    "refs": "PRD P2",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Work with intended Deaf users in Uzbekistan to define signed language and variant.",
+      "Do not infer equivalence to Russian Sign Language; establish model/data rights and evaluation."
+    ]
+  },
+  {
+    "key": "avatar",
+    "title": "Evaluate human-like signing avatar",
+    "phase": "Later",
+    "priority": "P2",
+    "area": "playback",
+    "refs": "PRD P2",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Verify rig/asset licenses and preservation of manual/non-manual linguistic features.",
+      "Demonstrate comprehension improvement against skeleton baseline before replacement."
+    ]
+  },
+  {
+    "key": "bidirectional",
+    "title": "Specify sign-to-spoken bidirectional translation",
+    "phase": "Later",
+    "priority": "P2",
+    "area": "translation",
+    "refs": "PRD P2",
+    "depends": [
+      "release"
+    ],
+    "criteria": [
+      "Create separate capture/privacy requirements and verify platform camera/import support.",
+      "Evaluate licensed sign-video inference with fluent users and define accuracy/failure gates."
+    ]
+  }
+]

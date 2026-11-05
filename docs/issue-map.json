@@ -1,0 +1,154 @@
+{
+  "foundation": {
+    "number": 1,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/1"
+  },
+  "provider": {
+    "number": 2,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/2"
+  },
+  "provenance": {
+    "number": 3,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/3"
+  },
+  "speech-matrix": {
+    "number": 4,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/4"
+  },
+  "pose-contract": {
+    "number": 5,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/5"
+  },
+  "evaluation-protocol": {
+    "number": 6,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/6"
+  },
+  "app-targets": {
+    "number": 7,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/7"
+  },
+  "swift-ci": {
+    "number": 8,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/8"
+  },
+  "speech-lifecycle": {
+    "number": 9,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/9"
+  },
+  "utterances": {
+    "number": 10,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/10"
+  },
+  "session-gate": {
+    "number": 11,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/11"
+  },
+  "service-adapter": {
+    "number": 12,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/12"
+  },
+  "pipeline": {
+    "number": 13,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/13"
+  },
+  "renderer": {
+    "number": 14,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/14"
+  },
+  "privacy-controls": {
+    "number": 15,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/15"
+  },
+  "ephemeral": {
+    "number": 16,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/16"
+  },
+  "caption-view": {
+    "number": 17,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/17"
+  },
+  "iphone": {
+    "number": 18,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/18"
+  },
+  "ipad": {
+    "number": 19,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/19"
+  },
+  "visionpro": {
+    "number": 20,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/20"
+  },
+  "interruptions": {
+    "number": 21,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/21"
+  },
+  "accessibility": {
+    "number": 22,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/22"
+  },
+  "caption-study": {
+    "number": 23,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/23"
+  },
+  "asl-study": {
+    "number": 24,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/24"
+  },
+  "reliability": {
+    "number": 25,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/25"
+  },
+  "operations": {
+    "number": 26,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/26"
+  },
+  "distribution": {
+    "number": 27,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/27"
+  },
+  "portfolio": {
+    "number": 28,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/28"
+  },
+  "release": {
+    "number": 29,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/29"
+  },
+  "corrections": {
+    "number": 30,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/30"
+  },
+  "speed": {
+    "number": 31,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/31"
+  },
+  "history": {
+    "number": 32,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/32"
+  },
+  "coreml": {
+    "number": 33,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/33"
+  },
+  "dsgs": {
+    "number": 34,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/34"
+  },
+  "russian": {
+    "number": 35,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/35"
+  },
+  "uzbek": {
+    "number": 36,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/36"
+  },
+  "avatar": {
+    "number": 37,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/37"
+  },
+  "bidirectional": {
+    "number": 38,
+    "url": "https://github.com/azizbek-asadovnzzemu/SRay/issues/38"
+  }
+}
