@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-05",
+  "purpose": "Single synthetic compatibility probe; no private conversation input",
+  "input": "Hello",
+  "spoken": "en",
+  "signed": "ase",
+  "production_access_verified": false,
+  "status": 200,
+  "content_type": "application/pose",
+  "bytes_read": 256192,
+  "exceeded_probe_limit": false,
+  "sha256": "46f256c8157a0aecec6c9163979ab2787f86eaf38d017c4c0df95c29e795dfb1"
+}
