@@ -49,4 +49,4 @@ The Swift Testing suite passed three test functions with five scenarios after a 
 
 ## Remaining blockers
 
-The active app/audio pipeline is implemented in #7/#9. This probe can be embedded into those targets but cannot replace hardware evaluation. Required physical devices, asset availability and measurements remain unverified; issue #4 stays open.
+The active app/audio pipeline is planned in #7/#9. This probe can be embedded into those targets but cannot replace hardware evaluation. Required physical devices, asset availability and measurements remain unverified; issue #4 stays open.
