@@ -4,7 +4,7 @@ Issue #8. `Apple CI` runs for pull requests and pushes to develop/main. No signi
 
 ## Checks and toolchains
 
-Three independent jobs build the iPhone/iPad target, build the visionOS target, and validate every Swift package directly under `Packages` and `Tools`. Packages with test targets run `swift test`; other packages run `swift build`. New behavioral suites therefore join CI without a separate workflow change. There are currently no app UI test targets; these SDK builds do not claim simulator execution or physical-device validation.
+Three independent jobs build the iPhone/iPad target, build the visionOS target, and validate every Swift package directly under `Packages` and `Tools`. Each native job also compiles all package targets against its device SDK, covering adapters not yet linked into the app. Packages with test targets run `swift test`; other packages run `swift build`. New behavioral suites therefore join CI without a separate workflow change. There are currently no app UI test targets; these SDK builds do not claim simulator execution or physical-device validation.
 
 The workflow selects Xcode 26.6 explicitly on `macos-26`, based on the [published runner inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md). Missing toolchains fail the run instead of silently selecting a different version. Local development currently uses Xcode 27.0. Runner OS images evolve; record the image and printed toolchain versions from each run when investigating a regression.
 
