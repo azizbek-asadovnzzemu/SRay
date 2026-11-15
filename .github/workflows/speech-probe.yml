@@ -1,0 +1,16 @@
+name: Speech probe tests
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+permissions:
+  contents: read
+jobs:
+  speech-probe:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - run: swift test --package-path Tools/SpeechReadinessProbe
