@@ -5,9 +5,16 @@ import PackageDescription
 let package = Package(
     name: "SRayKit",
     platforms: [.iOS(.v17), .visionOS(.v2), .macOS(.v14)],
-    products: [.library(name: "SRayUI", targets: ["SRayUI"])],
+    products: [
+        .library(name: "SRayUI", targets: ["SRayUI"]),
+        .library(name: "SpeechCore", targets: ["SpeechCore"]),
+        .library(name: "SpeechPlatform", targets: ["SpeechPlatform"])
+    ],
     targets: [
         .target(name: "ConversationCore"),
+        .target(name: "SpeechCore"),
+        .target(name: "SpeechPlatform", dependencies: ["SpeechCore"]),
+        .testTarget(name: "SpeechCoreTests", dependencies: ["SpeechCore"]),
         .target(name: "SRayUI", dependencies: ["ConversationCore"])
     ]
 )
