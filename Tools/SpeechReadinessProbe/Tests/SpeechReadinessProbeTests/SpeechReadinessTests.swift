@@ -20,7 +20,7 @@ import Testing
         // Act
         let readiness = snapshot.readiness
         // Assert
-        #expect(readiness == .onDeviceRecognitionUnavailable)
+        #expect(readiness == .readyForOfflineTest)
     }
 
     /// Each permission state maps to an explicit next step.
