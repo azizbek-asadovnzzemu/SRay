@@ -12,6 +12,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "ConversationCore"),
+        .testTarget(name: "ConversationCoreTests", dependencies: ["ConversationCore"]),
         .target(name: "SpeechCore"),
         .target(name: "SpeechPlatform", dependencies: ["SpeechCore"]),
         .testTarget(name: "SpeechCoreTests", dependencies: ["SpeechCore"]),
