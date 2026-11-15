@@ -1,0 +1,51 @@
+name: Apple CI
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+permissions:
+  contents: read
+concurrency:
+  group: apple-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    name: Apple ${{ matrix.mode }}
+    runs-on: macos-26
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [ios, visionos, packages]
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record selected toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Build or test
+        run: python3 scripts/apple_ci.py "${{ matrix.mode }}"
+      - name: Preserve content-free failure outcomes
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: apple-${{ matrix.mode }}-outcomes
+          path: ${{ runner.temp }}/sray-ci/${{ matrix.mode }}/outcomes.json
+          if-no-files-found: ignore
+          retention-days: 7
+  required:
+    name: Apple CI
+    if: always()
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require all Apple jobs
+        env:
+          RESULT: ${{ needs.validate.result }}
+        run: test "$RESULT" = success
