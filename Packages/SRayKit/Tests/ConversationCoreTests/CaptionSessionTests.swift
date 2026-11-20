@@ -188,4 +188,29 @@ struct CaptionSessionTests {
         #expect(session.lines.isEmpty)
         #expect(backend.stopCount == 1)
     }
+
+    /// A newly opened window cannot restart a conversation another window ended.
+    @Test func newWindowAfterEndDoesNotRestartCapture() async {
+        // Arrange
+        let backend = ControlledSpeechBackend()
+        let session = CaptionSession(backend: backend)
+        session.windowDidOpen(UUID())
+        var permissions = backend.authorizationRequests.makeAsyncIterator()
+        var starts = backend.recognitionStarts.makeAsyncIterator()
+        session.start()
+        await permissions.next()
+        backend.resolveAuthorization(true)
+        await starts.next()
+
+        // Act
+        session.end()
+        session.windowDidOpen(UUID())
+
+        // Assert
+        #expect(session.phase == .ready)
+        #expect(session.canEnd == false)
+        #expect(session.lines.isEmpty)
+        #expect(backend.startCount == 1)
+        #expect(backend.stopCount == 1)
+    }
 }

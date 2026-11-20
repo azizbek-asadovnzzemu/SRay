@@ -6,6 +6,13 @@ import UIKit
 
 /// A window into the shared conversation, with independent reading controls.
 public struct ConversationView: View {
+    /// Identifier of the native scene that presents the shared caption session.
+    public static let sceneID = "conversation"
+
+    #if os(visionOS)
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    #endif
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -49,6 +56,15 @@ public struct ConversationView: View {
             .navigationBarTitleDisplayMode(dynamicTypeSize.isAccessibilitySize ? .inline : .automatic)
             #endif
             .toolbar {
+                #if os(visionOS)
+                if supportsMultipleWindows {
+                    ToolbarItem(placement: .secondaryAction) {
+                        Button("New Caption Window", systemImage: "macwindow.badge.plus") {
+                            openWindow(id: Self.sceneID)
+                        }
+                    }
+                }
+                #endif
                 ToolbarItem(placement: .primaryAction) {
                     Menu("Caption Text Size", systemImage: "textformat.size") {
                         Picker("Caption Text Size", selection: $textSize) {
