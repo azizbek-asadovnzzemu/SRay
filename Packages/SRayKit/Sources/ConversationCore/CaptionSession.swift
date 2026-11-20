@@ -19,6 +19,7 @@ public final class CaptionSession {
     @ObservationIgnored private var capture: Task<Void, Never>?
     @ObservationIgnored private var expiry: Task<Void, Never>?
     @ObservationIgnored private var requestID: UUID?
+    @ObservationIgnored private var openWindows: Set<UUID> = []
 
     /// Creates a room for local captions around one exclusively owned microphone backend.
     public init(backend: any SpeechBackend) {
@@ -58,10 +59,21 @@ public final class CaptionSession {
         clear(nextPhase: .ready)
     }
 
-    /// Stops capture and releases the conversation when the app moves to the background.
+    /// Stops capture and releases the conversation after a lifecycle interruption.
     public func interrupt() {
         guard origin != nil else { return }
         clear(nextPhase: .interrupted)
+    }
+
+    /// Registers a presented conversation window.
+    public func windowDidOpen(_ id: UUID) {
+        openWindows.insert(id)
+    }
+
+    /// Stops the shared conversation when its last presented window closes.
+    public func windowDidClose(_ id: UUID) {
+        guard openWindows.remove(id) != nil, openWindows.isEmpty else { return }
+        interrupt()
     }
 
     /// Waits for the current recognition request to finish, if one is active.
@@ -92,9 +104,12 @@ public final class CaptionSession {
         guard requestID == id else { return }
         requestID = nil
         capture = nil
-        if case .failed(let reason) = speech.state {
+        switch speech.state {
+        case .failed(.interrupted):
+            interrupt()
+        case .failed(let reason):
             phase = .failed(reason)
-        } else {
+        default:
             phase = .finished
         }
     }
