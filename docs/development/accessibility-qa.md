@@ -14,6 +14,6 @@ xcodebuild -project SRay.xcodeproj -scheme SRay-iOS \
 
 The largest-text case checks that Start is reachable, rotates an active conversation, confirms the caption remains visible in the accessibility tree, and ends the session. The iPad case checks that a wide window lays out the status and caption in separate columns and that Shift–Command–E ends and clears the session. The iPad-only case skips on iPhone.
 
-All three cases passed on an iPad Pro 11-inch M5 simulator on iOS 27.0. The rotation case also passed on iPhone 18 Pro with the same runtime. The background check uses Home and then reactivates the existing app. It verifies the synthetic caption is cleared and the controls require a fresh start. Run these checks separately from the package and device SDK builds in Apple CI.
+All three cases passed on an iPad Pro 11-inch M5 simulator on iOS 27.0. The rotation case also passed on iPhone 18 Pro with the same runtime. The background check uses Home and then reactivates the existing app. It verifies the synthetic caption is cleared and the controls require a fresh start. Apple CI runs these checks on both iOS device families, separately from the package and device SDK builds.
 
 Issue #22 remains open for measuring contrast and testing VoiceOver, Switch Control, Reduce Motion, Reduce Transparency, pointer and gaze/pinch on devices. Repeat the complete conversation flow once playback and the ASL controls are available.
