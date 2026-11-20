@@ -7,6 +7,7 @@ import UIKit
 /// A window into the shared conversation, with independent reading controls.
 public struct ConversationView: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL
     @State private var windowID = UUID()
     @State private var textSize: CaptionTextSize = .standard
@@ -24,13 +25,15 @@ public struct ConversationView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         sessionStatus
-                        if scenePhase == .active {
-                            transcript
-                        } else if session.canEnd {
-                            Label("Captions hidden", systemImage: "eye.slash")
-                        }
-                        if session.phase != .listening && session.phase != .preparing {
-                            startButton
+                        if session.canEnd {
+                            if session.phase != .listening && session.phase != .preparing {
+                                restartControls
+                            }
+                            if scenePhase == .active {
+                                transcript
+                            } else {
+                                Label("Captions hidden", systemImage: "eye.slash")
+                            }
                         }
                     }
                     .frame(maxWidth: 640, alignment: .leading)
@@ -43,10 +46,18 @@ public struct ConversationView: View {
                             proxy.scrollTo(ScrollTarget.live, anchor: .top)
                             liveFocused = true
                         }
+                    } else {
+                        primaryStartButton(dynamicTypeSize.isAccessibilitySize ? "Start Captions" : "Start Conversation")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(.regularMaterial)
                     }
                 }
             }
             .navigationTitle("SRay")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(dynamicTypeSize.isAccessibilitySize ? .inline : .automatic)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Menu("Caption Text Size", systemImage: "textformat.size") {
@@ -79,7 +90,7 @@ public struct ConversationView: View {
     private var statusMessage: some View {
         switch session.phase {
         case .ready:
-            Text("Start a conversation to caption nearby speech. Audio is processed on this device.")
+            Text("Caption nearby English speech on this device.")
         case .preparing:
             ProgressView("Preparing captions…")
         case .listening:
@@ -137,14 +148,23 @@ public struct ConversationView: View {
             .accessibilityHint(line.isFinal ? Text("") : Text("Caption in progress"))
     }
 
-    private var startButton: some View {
+    private func primaryStartButton(_ title: LocalizedStringKey) -> some View {
+        Button {
+            session.start()
+        } label: {
+            Label(title, systemImage: "mic")
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 44)
+                .frame(maxWidth: 384)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+    }
+
+    private var restartControls: some View {
         VStack(alignment: .leading) {
-            Button(session.canEnd ? "Continue Captions" : "Start Conversation", systemImage: "mic") {
-                session.start()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .frame(minHeight: 44)
+            primaryStartButton("Continue Captions")
             #if canImport(UIKit)
             if session.phase == .failed(.permissionDenied),
                let url = URL(string: UIApplication.openSettingsURLString) {
