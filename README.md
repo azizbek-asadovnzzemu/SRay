@@ -2,7 +2,7 @@
 
 Native conversation accessibility for Vision Pro, iPhone and iPad.
 
-**Status: planning and implementation foundation. No runnable production app is included yet.**
+**Status: pre-release. The `develop` branch builds a native English captions app. ASL output remains unavailable while provider access, rendering and comprehension are evaluated.**
 
 SRay will help Deaf and hard-of-hearing people follow everyday one-to-one conversations through offline English captions and optional online English-to-ASL translation using Sign MT. Users explicitly enable translation and can pause transmission while captions continue. Skeleton output must pass ASL comprehension testing before release.
 
@@ -18,13 +18,25 @@ SRay will help Deaf and hard-of-hearing people follow everyday one-to-one conver
 
 ## Development
 
-Clone this repository and check out `develop` for contribution work. The initial repository contains requirements and community infrastructure; platform targets and executable build/test commands will be added through the foundation issues. Do not interpret documentation checks as app tests.
+Clone `develop` for the current app and contribution work. Use full Xcode with the iOS and visionOS SDKs. The project uses a local Swift package and builds without a signing team for SDK checks.
 
 ```sh
-git clone https://github.com/azizbek-asadovnzzemu/SRay.git
+git clone --branch develop https://github.com/azizbek-asadovnzzemu/SRay.git
 cd SRay
-git switch develop
+python3 scripts/apple_ci.py ios
+python3 scripts/apple_ci.py visionos
+python3 scripts/apple_ci.py packages
 ```
+
+The commands above passed in a clean checkout of `develop` at `7f569da` with Xcode 27.2, including 57 Swift test functions. Hosted CI separately checks the configured toolchain.
+
+Open `SRay.xcodeproj` and run `SRay-iOS` on an iPhone or iPad simulator. Start Conversation requests microphone and speech access when invoked. English recognition requires an on-device recognizer and available language assets. Follow the [native build guide](docs/development/native-app.md) and [captions guide](docs/development/live-captions.md).
+
+| Area | Current evidence |
+| --- | --- |
+| iPhone and iPad | Native app and packages compile for iOS 17. Simulator launch and start-screen layout were checked with iOS 27.0. |
+| Vision Pro | Native app and packages compile for visionOS 2. Device comfort, input and live caption capture still need hardware testing. |
+| Speech and translation | Swift Testing covers session behavior and synthetic transport data. [Offline capture](docs/feasibility/offline-speech.md) and [ASL evaluation](docs/research/evaluation-protocol.md) remain release gates. |
 
 The [MRSignTranslate prototype](https://github.com/azizbek-asadovnzzemu/MRSignTranslate) is a separate reference project. Its source, archives and third-party assets have not been copied into this repository. Importing any reusable material requires a provenance review and preserved notices.
 
