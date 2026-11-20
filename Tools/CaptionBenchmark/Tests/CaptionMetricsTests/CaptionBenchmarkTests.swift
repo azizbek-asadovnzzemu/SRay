@@ -77,7 +77,7 @@ struct CaptionBenchmarkTests {
         #expect(report.displayedWordP95Milliseconds == 190)
     }
 
-    @Test func refusesInconsistentClockInput() throws {
+    @Test func preservesNegativeLatencyWhenTheCorrectPartialAppearsEarly() throws {
         // Arrange
         let input = try decode("""
         {"utterances":[],"wordObservations":[
@@ -85,7 +85,21 @@ struct CaptionBenchmarkTests {
         ]}
         """)
 
-        // Act and assert
+        // Act
+        let report = try CaptionBenchmark.score(input)
+
+        // Assert
+        #expect(report.allWordP95Milliseconds == -1)
+        #expect(report.displayedWordP95Milliseconds == -1)
+        #expect(report.missingPartials == 0)
+    }
+
+    @Test(arguments: [(-1, 0), (0, -1)])
+    func refusesTimestampsBeforeTheClockOrigin(end: Int, visible: Int) {
+        let observation = CaptionBenchmarkInput.WordObservation(
+            spokenWordEndMilliseconds: end, firstVisiblePartialMilliseconds: visible
+        )
+        let input = CaptionBenchmarkInput(utterances: [], wordObservations: [observation])
         #expect(throws: CaptionBenchmarkError.invalidTiming) { try CaptionBenchmark.score(input) }
     }
 

@@ -30,7 +30,7 @@ public struct CaptionBenchmarkReport: Encodable, Equatable, Sendable {
     public let wordErrorRate: Double?
     public let observedWords: Int
     public let missingPartials: Int
-    /// Nearest-rank p95 over all observed words, ranking missing partials after finite delays.
+    /// Nearest-rank p95 of signed delays across all words, ranking missing partials last.
     /// Nil means the percentile is unavailable or belongs to the missing results.
     public let allWordP95Milliseconds: Int?
     /// A separate percentile conditioned on a correct partial appearing.
@@ -80,7 +80,7 @@ public enum CaptionBenchmark {
             let end = word.spokenWordEndMilliseconds
             guard end >= 0 else { throw CaptionBenchmarkError.invalidTiming }
             guard let visible = word.firstVisiblePartialMilliseconds else { continue }
-            guard visible >= end else { throw CaptionBenchmarkError.invalidTiming }
+            guard visible >= 0 else { throw CaptionBenchmarkError.invalidTiming }
             delays.append(visible - end)
         }
         delays.sort()

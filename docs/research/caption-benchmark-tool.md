@@ -23,7 +23,7 @@ Synthetic input example:
 }
 ```
 
-Use the same monotonic origin for the end of each spoken word and the appearance of its first correct partial. Supply an observation with a null partial time when it never appears. A null hypothesis means recognition failed. The scorer counts all its reference words as deletions. An empty hypothesis array is a valid empty result and also contributes deletions.
+Use the same monotonic origin for the end of each spoken word and the appearance of its first correct partial. Both timestamps must be nonnegative. The scorer subtracts word end from appearance time, so a correct partial visible before the word ends contributes negative latency. Supply a null partial time when no correct partial appears. A null hypothesis means recognition failed. The scorer counts all its reference words as deletions. An empty hypothesis array is a valid empty result and also contributes deletions.
 
 The word error rate is the total number of substitutions, deletions and insertions divided by the total reference word count. It can exceed one. The nearest-rank p95 uses all word observations, with missing partials ranked after finite delays. The displayed-only p95 is reported separately. A percentile that cannot be computed or falls in the missing tail is absent from the JSON, with missing counts still reported.
 
