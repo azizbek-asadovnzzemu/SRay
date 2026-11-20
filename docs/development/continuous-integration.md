@@ -4,7 +4,7 @@ Issue #8. `Apple CI` runs for pull requests and pushes to develop/main. No signi
 
 ## Checks and toolchains
 
-Three independent jobs build the iPhone/iPad target, build the visionOS target, and validate every Swift package directly under `Packages` and `Tools`. Each native job also compiles all package targets against its device SDK, covering adapters not yet linked into the app. Packages with test targets run `swift test`; other packages run `swift build`. New behavioral suites therefore join CI without a separate workflow change. There are currently no app UI test targets; these SDK builds do not claim simulator execution or physical-device validation.
+Three independent jobs build the iPhone/iPad target, build the visionOS target, and validate every Swift package directly under `Packages` and `Tools`. Each native job also compiles the device packages, including adapters outside the app graph. Explicitly macOS-only tools run in the host package job. Packages with test targets run `swift test`; other packages run `swift build`. New behavioral suites therefore join CI without a separate workflow change. Run the separate [simulator UI tests](accessibility-qa.md) for caption controls. Physical-device validation uses its own protocol.
 
 The workflow selects Xcode 26.6 explicitly on `macos-26`, based on the [published runner inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md). Missing toolchains fail the run instead of silently selecting a different version. Local development currently uses Xcode 27.0. Runner OS images evolve; record the image and printed toolchain versions from each run when investigating a regression.
 
@@ -33,5 +33,3 @@ Before accepting this workflow, temporarily change the existing offline-readines
 ## Swift conventions
 
 Use Swift Testing for new unit/integration tests, deterministic dependency injection, Arrange–Act–Assert, and state assertions against production behavior. Keep UI tests separate when introduced; Swift Testing does not drive UI automation. Prefer framework-free MVI for conversation behavior and documented call-site APIs. Use modern FormatStyle/Text format APIs when displaying dates, numbers or durations; this CI change introduces no displayed formatted values.
-
-Packages that explicitly declare only macOS are host tools. They run in the package test job and are skipped by the iOS and visionOS device SDK jobs.
