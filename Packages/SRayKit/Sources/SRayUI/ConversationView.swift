@@ -44,6 +44,7 @@ public struct ConversationView: View {
                             }
                         } else {
                             primaryStartButton(dynamicTypeSize.isAccessibilitySize ? "Start Captions" : "Start Conversation")
+                                .accessibilityIdentifier("caption.start")
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(.regularMaterial)
@@ -116,6 +117,7 @@ public struct ConversationView: View {
             Label("English captions", systemImage: "captions.bubble")
                 .font(.title2.bold())
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("caption.status")
             statusMessage
             Label("ASL translation unavailable", systemImage: "hand.raised.slash")
                 .font(.subheadline)
@@ -154,6 +156,7 @@ public struct ConversationView: View {
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityFocused($liveFocused)
+                    .accessibilityIdentifier("caption.live")
                 if let latest = session.lines.last {
                     captionText(latest)
                         .id(latest.id)
@@ -234,6 +237,7 @@ public struct ConversationView: View {
                 .frame(minHeight: 44)
         }
         Button("End Conversation", role: .destructive) { session.end() }
+            .accessibilityIdentifier("caption.end")
             .keyboardShortcut("e", modifiers: [.command, .shift])
             .frame(minHeight: 44)
     }

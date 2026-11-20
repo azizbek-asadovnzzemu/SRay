@@ -37,6 +37,16 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F6E1B8FED2B431A5B140EDA6"
+               BuildableName = "SRay-iOSUITests.xctest"
+               BlueprintName = "SRay-iOSUITests"
+               ReferencedContainer = "container:SRay.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
