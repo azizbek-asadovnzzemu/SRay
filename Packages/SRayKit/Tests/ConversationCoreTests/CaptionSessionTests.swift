@@ -129,4 +129,63 @@ struct CaptionSessionTests {
         #expect(session.lines.isEmpty)
         #expect(session.phase == .finished)
     }
+
+    /// An audio interruption clears the transcript and requires an explicit new start.
+    @Test func audioInterruptionRequiresNewStart() async {
+        // Arrange
+        let backend = ControlledSpeechBackend()
+        let session = CaptionSession(backend: backend)
+        var permissions = backend.authorizationRequests.makeAsyncIterator()
+        var starts = backend.recognitionStarts.makeAsyncIterator()
+        session.start()
+        await permissions.next()
+        backend.resolveAuthorization(true)
+        await starts.next()
+        backend.yield(SpeechEvent(text: "Synthetic", isFinal: true))
+        backend.finish()
+        await session.waitForCaptureToFinish()
+        #expect(session.lines.count == 1)
+        session.start()
+        await permissions.next()
+        backend.resolveAuthorization(true)
+        await starts.next()
+
+        // Act
+        backend.finish(throwing: .interrupted)
+        await session.waitForCaptureToFinish()
+
+        // Assert
+        #expect(session.phase == .interrupted)
+        #expect(session.lines.isEmpty)
+        #expect(session.canEnd == false)
+        #expect(backend.startCount == 2)
+        #expect(backend.stopCount == 2)
+    }
+
+    /// Closing either window preserves the shared capture until the last window closes.
+    @Test func lastWindowStopsSharedCapture() async {
+        // Arrange
+        let backend = ControlledSpeechBackend()
+        let session = CaptionSession(backend: backend)
+        let first = UUID()
+        let second = UUID()
+        session.windowDidOpen(first)
+        session.windowDidOpen(second)
+        var permissions = backend.authorizationRequests.makeAsyncIterator()
+        var starts = backend.recognitionStarts.makeAsyncIterator()
+        session.start()
+        await permissions.next()
+        backend.resolveAuthorization(true)
+        await starts.next()
+
+        // Act and assert
+        session.windowDidClose(first)
+        session.windowDidClose(first)
+        #expect(session.phase == .listening)
+        #expect(backend.stopCount == 0)
+        session.windowDidClose(second)
+        #expect(session.phase == .interrupted)
+        #expect(session.lines.isEmpty)
+        #expect(backend.stopCount == 1)
+    }
 }

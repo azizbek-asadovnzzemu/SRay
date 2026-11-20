@@ -8,6 +8,7 @@ import UIKit
 public struct ConversationView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
+    @State private var windowID = UUID()
     @State private var textSize: CaptionTextSize = .standard
     @AccessibilityFocusState private var liveFocused: Bool
     private let session: CaptionSession
@@ -58,6 +59,8 @@ public struct ConversationView: View {
                 }
             }
         }
+        .onAppear { session.windowDidOpen(windowID) }
+        .onDisappear { session.windowDidClose(windowID) }
     }
 
     private var sessionStatus: some View {
@@ -83,8 +86,8 @@ public struct ConversationView: View {
             Label("Listening on this device", systemImage: "mic.fill")
         case .finished:
             Text("Listening stopped. Continue captions or end the conversation.")
-        case .interrupted:
-            Text("The conversation ended when the app moved to the background. Start again to resume captions.")
+        case .interrupted, .failed(.interrupted):
+            Text("The conversation was interrupted. Start a new conversation to resume captions.")
         case .failed(.permissionDenied):
             Text("Allow microphone and speech recognition access in Settings to start captions.")
         case .failed(.unavailable):
