@@ -36,6 +36,14 @@ public final class SpeechSession {
     /// Runs recognition until completion, failure, cancellation or explicit stop.
     /// Duplicate starts are ignored while a session is active.
     public func run(onEvent: @MainActor (SpeechEvent) -> Void = { _ in }) async {
+        await run(onListening: {}, onEvent: onEvent)
+    }
+
+    /// Runs recognition and reports when microphone capture begins.
+    public func run(
+        onListening: @MainActor () -> Void,
+        onEvent: @MainActor (SpeechEvent) -> Void
+    ) async {
         guard sessionID == nil, !Task.isCancelled else { return }
         let id = UUID()
         sessionID = id
@@ -56,6 +64,7 @@ public final class SpeechSession {
             do {
                 let events = try backend.startRecognition()
                 state = .listening
+                onListening()
                 for try await event in events {
                     guard sessionID == id, !Task.isCancelled else { return }
                     latestEvent = event
