@@ -66,4 +66,28 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         XCTAssertFalse(live.exists)
     }
+
+    /// Returning from the Home Screen requires a new conversation and clears previous captions.
+    func testBackgroundClearsCaptionAndRequiresExplicitRestart() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_CAPTIONS"] = "1"
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        start.tap()
+        let caption = app.staticTexts["Take the elevator to the second floor."]
+        XCTAssertTrue(caption.waitForExistence(timeout: 5))
+
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) ||
+                      app.state == .runningBackgroundSuspended)
+        app.activate()
+
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        XCTAssertTrue(start.isHittable)
+        XCTAssertFalse(caption.exists)
+        XCTAssertFalse(app.buttons["caption.end"].exists)
+    }
 }
