@@ -21,15 +21,20 @@ def run(label, command):
     return result.returncode
 
 
+def package_manifest(path):
+    """Read SwiftPM's platform and target declarations."""
+    result = subprocess.run(
+        ['swift', 'package', '--package-path', str(path), 'dump-package'],
+        cwd=root, check=True, capture_output=True, text=True,
+    )
+    return json.loads(result.stdout)
+
+
 try:
     if mode == 'packages':
         for package in packages:
             path = package.parent
-            manifest = subprocess.run(
-                ['swift', 'package', '--package-path', str(path), 'dump-package'],
-                cwd=root, check=True, capture_output=True, text=True,
-            )
-            has_tests = any(t['type'] == 'test' for t in json.loads(manifest.stdout)['targets'])
+            has_tests = any(t['type'] == 'test' for t in package_manifest(path)['targets'])
             action = 'test' if has_tests else 'build'
             run(f'{path.name}: {action}', ['swift', action, '--package-path', str(path),
                 '--scratch-path', str(output / path.name)])
@@ -43,6 +48,10 @@ try:
         sdk = subprocess.run(['xcrun', '--sdk', sdk_name, '--show-sdk-path'],
             check=True, capture_output=True, text=True).stdout.strip()
         for package in packages:
+            platforms = {item['platformName'] for item in package_manifest(package.parent)['platforms']}
+            if platforms == {'macos'}:
+                print(f'Skipping {package.parent.name} on {platform}: macOS-only package', flush=True)
+                continue
             run(f'{package.parent.name}: {platform}', ['swift', 'build',
                 '--package-path', str(package.parent), '--triple', triple, '--sdk', sdk,
                 '--scratch-path', str(output / package.parent.name)])

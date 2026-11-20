@@ -33,3 +33,5 @@ Before accepting this workflow, temporarily change the existing offline-readines
 ## Swift conventions
 
 Use Swift Testing for new unit/integration tests, deterministic dependency injection, Arrange–Act–Assert, and state assertions against production behavior. Keep UI tests separate when introduced; Swift Testing does not drive UI automation. Prefer framework-free MVI for conversation behavior and documented call-site APIs. Use modern FormatStyle/Text format APIs when displaying dates, numbers or durations; this CI change introduces no displayed formatted values.
+
+Packages that explicitly declare only macOS are host tools. They run in the package test job and are skipped by the iOS and visionOS device SDK jobs.
