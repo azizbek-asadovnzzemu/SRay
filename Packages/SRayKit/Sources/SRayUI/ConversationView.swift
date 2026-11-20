@@ -8,6 +8,7 @@ import UIKit
 public struct ConversationView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.openURL) private var openURL
     @State private var windowID = UUID()
     @State private var textSize: CaptionTextSize = .standard
@@ -21,36 +22,25 @@ public struct ConversationView: View {
 
     public var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        sessionStatus
-                        if session.canEnd {
-                            if session.phase != .listening && session.phase != .preparing {
-                                restartControls
-                            }
-                            if scenePhase == .active {
-                                transcript
-                            } else {
-                                Label("Captions hidden", systemImage: "eye.slash")
-                            }
-                        }
-                    }
-                    .frame(maxWidth: 640, alignment: .leading)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                }
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if session.canEnd {
-                        sessionControls {
-                            proxy.scrollTo(ScrollTarget.live, anchor: .top)
-                            liveFocused = true
-                        }
-                    } else {
-                        primaryStartButton(dynamicTypeSize.isAccessibilitySize ? "Start Captions" : "Start Conversation")
-                            .frame(maxWidth: .infinity)
+            GeometryReader { window in
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        conversationContent(windowWidth: window.size.width)
                             .padding()
-                            .background(.regularMaterial)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        if session.canEnd {
+                            sessionControls {
+                                proxy.scrollTo(ScrollTarget.live, anchor: .top)
+                                liveFocused = true
+                            }
+                        } else {
+                            primaryStartButton(dynamicTypeSize.isAccessibilitySize ? "Start Captions" : "Start Conversation")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(.regularMaterial)
+                        }
                     }
                 }
             }
@@ -72,6 +62,37 @@ public struct ConversationView: View {
         }
         .onAppear { session.windowDidOpen(windowID) }
         .onDisappear { session.windowDidClose(windowID) }
+    }
+
+    /// Reflows the same content and scroll view as the window changes size.
+    private func conversationContent(windowWidth: CGFloat) -> some View {
+        let usesColumns = session.canEnd && horizontalSizeClass == .regular
+            && windowWidth >= 760 && !dynamicTypeSize.isAccessibilitySize
+        let layout = usesColumns
+            ? AnyLayout(HStackLayout(alignment: .top, spacing: 32))
+            : AnyLayout(VStackLayout(alignment: .leading, spacing: 24))
+
+        return layout {
+            VStack(alignment: .leading, spacing: 16) {
+                sessionStatus
+                if session.canEnd && session.phase != .listening && session.phase != .preparing {
+                    restartControls
+                }
+            }
+            .frame(maxWidth: usesColumns ? 252 : .infinity, alignment: .leading)
+
+            if session.canEnd {
+                Group {
+                    if scenePhase == .active {
+                        transcript
+                    } else {
+                        Label("Captions hidden", systemImage: "eye.slash")
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(maxWidth: usesColumns ? 980 : 640, alignment: .leading)
     }
 
     private var sessionStatus: some View {
@@ -160,6 +181,7 @@ public struct ConversationView: View {
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
+        .keyboardShortcut(.defaultAction)
     }
 
     private var restartControls: some View {
@@ -192,9 +214,11 @@ public struct ConversationView: View {
     private func controlButtons(returnToLive: @escaping () -> Void) -> some View {
         if !session.lines.isEmpty && scenePhase == .active {
             Button("Return to Live", systemImage: "arrow.up", action: returnToLive)
+                .keyboardShortcut("l", modifiers: [.command, .shift])
                 .frame(minHeight: 44)
         }
         Button("End Conversation", role: .destructive) { session.end() }
+            .keyboardShortcut("e", modifiers: [.command, .shift])
             .frame(minHeight: 44)
     }
 }
