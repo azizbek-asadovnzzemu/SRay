@@ -8,16 +8,30 @@
 
 /* Begin PBXBuildFile section */
 		3AF28A4ACC421A4F4355DEE7 /* SRayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111847B87F5DB0CBCE34CB0F /* SRayApp.swift */; };
+		4CA24F61768CD884A0CA5D70 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7ED086F619C81C93B5995B09 /* Foundation.framework */; };
 		9BD1D34ED71EFE9377B5FD87 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60343CAB011D3726A39CBB58 /* Foundation.framework */; };
+		A7B884595DCBADE557C2705D /* CaptionFlowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155E59C0B10E2CB7C1377508 /* CaptionFlowUITests.swift */; };
 		A86DB3928B4D0FE64F24FE34 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7ED086F619C81C93B5995B09 /* Foundation.framework */; };
 		BB52BAE59CF6A08F7931B279 /* SRayUI in Frameworks */ = {isa = PBXBuildFile; productRef = A24B08E88F4482B0D91E355B /* SRayUI */; };
 		C489BA0363B1176129F8FAE8 /* SRayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111847B87F5DB0CBCE34CB0F /* SRayApp.swift */; };
 		CFC62A2B751038AD0A17F431 /* SRayUI in Frameworks */ = {isa = PBXBuildFile; productRef = 1C7BA0CE72FDF2CA398F6B98 /* SRayUI */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		B39CE5CE6251067BE1617D11 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7A9453105456F95193D52FB7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7458D1447ED38D2568901E51;
+			remoteInfo = "SRay-iOS";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		111847B87F5DB0CBCE34CB0F /* SRayApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SRayApp.swift; path = Apps/SRay/SRayApp.swift; sourceTree = SOURCE_ROOT; };
+		155E59C0B10E2CB7C1377508 /* CaptionFlowUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CaptionFlowUITests.swift; path = Apps/SRayUITests/CaptionFlowUITests.swift; sourceTree = "<group>"; };
 		60343CAB011D3726A39CBB58 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/XROS.platform/Developer/SDKs/XROS2.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		623C746973B7CA3D9F198193 /* SRay-iOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SRay-iOSUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AA52D16DA0F4828179CA668 /* SRay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SRay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7ED086F619C81C93B5995B09 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		A47AD3EF62D516C774C3DCE6 /* SRay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SRay.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -39,6 +53,14 @@
 			files = (
 				A86DB3928B4D0FE64F24FE34 /* Foundation.framework in Frameworks */,
 				BB52BAE59CF6A08F7931B279 /* SRayUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D249FDE5FC4A3BA83418DFD1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4CA24F61768CD884A0CA5D70 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,6 +89,7 @@
 			children = (
 				7AA52D16DA0F4828179CA668 /* SRay.app */,
 				A47AD3EF62D516C774C3DCE6 /* SRay.app */,
+				623C746973B7CA3D9F198193 /* SRay-iOSUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -85,6 +108,7 @@
 				45521DB91152EC064637A695 /* Products */,
 				31A3DD8A205D011673EF18DD /* Frameworks */,
 				58E5DEAE073B7894917D1AFD /* Apps */,
+				155E59C0B10E2CB7C1377508 /* CaptionFlowUITests.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -147,6 +171,24 @@
 			productReference = 7AA52D16DA0F4828179CA668 /* SRay.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F6E1B8FED2B431A5B140EDA6 /* SRay-iOSUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 287AD9B280EF87C74DF32C08 /* Build configuration list for PBXNativeTarget "SRay-iOSUITests" */;
+			buildPhases = (
+				4124031C509AC748838901EF /* Sources */,
+				D249FDE5FC4A3BA83418DFD1 /* Frameworks */,
+				D224E0D8FCAE764823CDD26D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				428478D7C1C3C05E962892A0 /* PBXTargetDependency */,
+			);
+			name = "SRay-iOSUITests";
+			productName = "SRay-iOSUITests";
+			productReference = 623C746973B7CA3D9F198193 /* SRay-iOSUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -176,6 +218,7 @@
 			targets = (
 				7458D1447ED38D2568901E51 /* SRay-iOS */,
 				0367586917EAF6346361A254 /* SRay-visionOS */,
+				F6E1B8FED2B431A5B140EDA6 /* SRay-iOSUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -195,6 +238,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D224E0D8FCAE764823CDD26D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -203,6 +253,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				C489BA0363B1176129F8FAE8 /* SRayApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4124031C509AC748838901EF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A7B884595DCBADE557C2705D /* CaptionFlowUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,7 +274,31 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		428478D7C1C3C05E962892A0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "SRay-iOS";
+			target = 7458D1447ED38D2568901E51 /* SRay-iOS */;
+			targetProxy = B39CE5CE6251067BE1617D11 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		61D01F0E4CD947BAB0FA8F43 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.azizbekasadov.sray.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "SRay-iOS";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		74DB210FBE0C28AFDF30510F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -331,6 +413,20 @@
 			};
 			name = Debug;
 		};
+		BB6EA05264B7A02399822CE4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.azizbekasadov.sray.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "SRay-iOS";
+			};
+			name = Debug;
+		};
 		D6807EDE55027A1FA21E503F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -442,6 +538,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		287AD9B280EF87C74DF32C08 /* Build configuration list for PBXNativeTarget "SRay-iOSUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				61D01F0E4CD947BAB0FA8F43 /* Release */,
+				BB6EA05264B7A02399822CE4 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		6120000AF9D65CF26478CFA7 /* Build configuration list for PBXNativeTarget "SRay-visionOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
