@@ -8,9 +8,13 @@ struct SRayApp: App {
     @State private var captions = CaptionSession.makeOnDevice()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: ConversationView.sceneID) {
             ConversationView(session: captions)
         }
+        #if os(visionOS)
+        .defaultSize(width: 700, height: 480)
+        .windowResizability(.contentMinSize)
+        #endif
         .onChange(of: appPhase) { _, phase in
             if phase == .background { captions.interrupt() }
         }
