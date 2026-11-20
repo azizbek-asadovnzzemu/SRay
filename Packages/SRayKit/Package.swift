@@ -13,11 +13,11 @@ let package = Package(
     targets: [
         .target(name: "SignMT"),
         .testTarget(name: "SignMTTests", dependencies: ["SignMT"]),
-        .target(name: "ConversationCore"),
-        .testTarget(name: "ConversationCoreTests", dependencies: ["ConversationCore"]),
+        .target(name: "ConversationCore", dependencies: ["SpeechCore"]),
+        .testTarget(name: "ConversationCoreTests", dependencies: ["ConversationCore", "SpeechCore"]),
         .target(name: "SpeechCore"),
         .target(name: "SpeechPlatform", dependencies: ["SpeechCore"]),
         .testTarget(name: "SpeechCoreTests", dependencies: ["SpeechCore"]),
-        .target(name: "SRayUI", dependencies: ["ConversationCore"])
+        .target(name: "SRayUI", dependencies: ["ConversationCore", "SpeechPlatform"])
     ]
 )

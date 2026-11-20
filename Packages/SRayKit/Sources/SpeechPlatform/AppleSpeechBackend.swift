@@ -13,7 +13,9 @@ public final class AppleSpeechBackend: SpeechBackend {
     /// The locale-specific recognizer, absent when the locale is unsupported.
     private let recognizer: SFSpeechRecognizer?
     /// The sole engine owned by this backend.
-    private let engine = AVAudioEngine()
+    private var engine: AVAudioEngine?
+    /// Observers scoped to the currently running recognition request.
+    private var audioObservers: [NSObjectProtocol] = []
     /// The currently active audio request.
     private var request: SFSpeechAudioBufferRecognitionRequest?
     /// The currently active recognition task.
@@ -71,6 +73,7 @@ public final class AppleSpeechBackend: SpeechBackend {
                 self.stopRecognition()
             }
         }
+        observeAudioChanges(for: pair.continuation)
         do {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.record, mode: .measurement)
@@ -80,6 +83,8 @@ public final class AppleSpeechBackend: SpeechBackend {
             request.requiresOnDeviceRecognition = true
             request.shouldReportPartialResults = true
             self.request = request
+            let engine = AVAudioEngine()
+            self.engine = engine
             let input = engine.inputNode
             let format = input.outputFormat(forBus: 0)
             guard format.sampleRate > 0, format.channelCount > 0 else { throw SpeechFailure.unavailable }
@@ -112,14 +117,46 @@ public final class AppleSpeechBackend: SpeechBackend {
         }
     }
 
+    /// Routes interruptions to the current stream without calling the audio engine
+    /// on the notification thread. A retained observer can only end its old stream.
+    private func observeAudioChanges(for stream: AsyncThrowingStream<SpeechEvent, Error>.Continuation) {
+        let center = NotificationCenter.default
+        audioObservers = [
+            center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: nil) { notification in
+                let type = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+                if type == AVAudioSession.InterruptionType.began.rawValue {
+                    stream.finish(throwing: SpeechFailure.interrupted)
+                }
+            },
+            center.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: nil) { notification in
+                guard let rawReason = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                      let reason = AVAudioSession.RouteChangeReason(rawValue: rawReason) else { return }
+                switch reason {
+                case .oldDeviceUnavailable, .newDeviceAvailable, .noSuitableRouteForCategory, .routeConfigurationChange:
+                    stream.finish(throwing: SpeechFailure.interrupted)
+                default:
+                    break
+                }
+            },
+            center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: nil) { _ in
+                stream.finish(throwing: SpeechFailure.interrupted)
+            }
+        ]
+    }
+
     /// Invalidates callbacks, stops capture and releases all resources owned here.
     public func stopRecognition() {
         generation = nil
-        engine.stop()
+        for observer in audioObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        audioObservers.removeAll()
+        engine?.stop()
         if hasTap {
-            engine.inputNode.removeTap(onBus: 0)
+            engine?.inputNode.removeTap(onBus: 0)
             hasTap = false
         }
+        engine = nil
         request?.endAudio()
         recognitionTask?.cancel()
         recognitionTask = nil

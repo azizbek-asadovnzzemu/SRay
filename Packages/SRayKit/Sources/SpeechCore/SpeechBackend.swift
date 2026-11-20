@@ -24,6 +24,8 @@ public enum SpeechFailure: Error, Equatable, Sendable {
     case recognitionFailed
     /// A bounded event stream overflowed rather than silently dropping final text.
     case overloaded
+    /// A system interruption or audio route change ended capture.
+    case interrupted
 }
 
 /// Owns a single microphone and on-device recognition request.
