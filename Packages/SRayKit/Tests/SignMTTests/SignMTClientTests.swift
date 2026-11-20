@@ -1,0 +1,140 @@
+import Foundation
+import Testing
+@testable import SignMT
+
+/// Checks the observed network contract using only synthetic URLs, headers and bytes.
+struct SignMTClientTests {
+    /// Reserved query characters and non-ASCII text survive request construction.
+    @Test func encodesWholeEnglishUtterance() throws {
+        // Arrange
+        let text = "Do not send A+B & Café 🚲?"
+
+        // Act
+        let request = try SignMTClient.makeRequest(text: text)
+        let url = try #require(request.url)
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+
+        // Assert
+        #expect(request.httpMethod == "GET")
+        #expect(url.scheme == "https")
+        #expect(url.host == "us-central1-sign-mt.cloudfunctions.net")
+        #expect(url.path == "/spoken_text_to_signed_pose")
+        #expect(components.queryItems == [
+            .init(name: "spoken", value: "en"), .init(name: "signed", value: "ase"),
+            .init(name: "text", value: text),
+        ])
+        #expect(components.percentEncodedQuery?.contains("%2B") == true)
+        #expect(request.cachePolicy == .reloadIgnoringLocalCacheData)
+        #expect(request.timeoutInterval == 15)
+    }
+
+    /// Inputs outside the local envelope are rejected before building a URL.
+    @Test(arguments: [
+        (" \n", SignMTFailure.invalidText),
+        (String(repeating: "x", count: 281), .invalidText),
+
+    ])
+    func rejectsInvalidInput(text: String, error: SignMTFailure) {
+        // Arrange and act
+        #expect(throws: error) { try SignMTClient.makeRequest(text: text) }
+    }
+
+    /// A single grapheme can exceed the byte envelope and must be rejected.
+    @Test func rejectsOversizedGrapheme() {
+        // Arrange
+        let text = "a" + String(repeating: "\u{0301}", count: 2_048)
+
+        // Act and assert
+        #expect(throws: SignMTFailure.requestTooLarge) { try SignMTClient.makeRequest(text: text) }
+    }
+
+    /// Non-success statuses map to typed failures before any response body is collected.
+    @Test(arguments: [
+        (302, SignMTFailure.redirectRejected),
+        (401, .unauthorized),
+        (403, .unauthorized),
+        (429, .rateLimited(retryAfter: .delay(.seconds(17)))),
+        (500, .unavailable),
+        (418, .unexpectedStatus(418)),
+    ])
+    func mapsStatus(code: Int, error: SignMTFailure) throws {
+        // Arrange
+        let response = try makeResponse(code: code, headers: ["Retry-After": "17"])
+        // Act and assert
+        #expect(throws: error) { try SignMTClient.validate(response) }
+    }
+
+    /// Retry-After accepts a GMT server date and ignores an invalid value.
+    @Test func parsesRetryDate() {
+        // Arrange
+        let header = "Sun, 06 Nov 1994 08:49:37 GMT"
+
+        // Act
+        let parsed = RetryAfter(header)
+
+        // Assert
+        #expect(parsed == .date(Date(timeIntervalSince1970: 784_111_777)))
+        #expect(RetryAfter("invalid") == nil)
+    }
+
+    /// Header validation rejects a non-pose response or declared oversize body.
+    @Test func validatesMediaTypeAndDeclaredLength() throws {
+        // Arrange
+        let pose = try makeResponse(code: 200, headers: ["Content-Type": "application/pose"])
+        let html = try makeResponse(code: 200, headers: ["Content-Type": "text/html"])
+        let oversize = try makeResponse(code: 200, headers: [
+            "Content-Type": "application/pose",
+            "Content-Length": String(SignMTClient.maximumResponseBytes + 1),
+        ])
+
+        // Act and assert
+        #expect(throws: Never.self) { try SignMTClient.validate(pose) }
+        #expect(throws: SignMTFailure.invalidResponse) { try SignMTClient.validate(html) }
+        #expect(throws: SignMTFailure.responseTooLarge) { try SignMTClient.validate(oversize) }
+    }
+
+    /// Stream counting enforces the limit even without a Content-Length header.
+    @Test func boundsUnknownSizeStream() async throws {
+        // Arrange
+        let exact = makeBytes([1, 2, 3])
+        let oversize = makeBytes([1, 2, 3, 4])
+        let empty = makeBytes([])
+
+        // Act
+        let received = try await SignMTClient.readPose(from: exact, limit: 3)
+
+        // Assert
+        #expect(received.bytes == Data([1, 2, 3]))
+        await #expect(throws: SignMTFailure.responseTooLarge) {
+            try await SignMTClient.readPose(from: oversize, limit: 3)
+        }
+        await #expect(throws: SignMTFailure.invalidResponse) {
+            try await SignMTClient.readPose(from: empty, limit: 3)
+        }
+    }
+
+    /// Cancellation prevents buffered bytes from being returned as a valid response.
+    @Test func cancelledReadReturnsNoPose() async {
+        // Arrange
+        let bytes = makeBytes([1, 2, 3])
+        let read = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await SignMTClient.readPose(from: bytes)
+        }
+
+        // Act and assert
+        await #expect(throws: CancellationError.self) { try await read.value }
+    }
+
+    private func makeResponse(code: Int, headers: [String: String]) throws -> HTTPURLResponse {
+        let url = try #require(URL(string: "https://example.invalid"))
+        return try #require(HTTPURLResponse(url: url, statusCode: code, httpVersion: "HTTP/1.1", headerFields: headers))
+    }
+
+    private func makeBytes(_ values: [UInt8]) -> AsyncStream<UInt8> {
+        AsyncStream(bufferingPolicy: .bufferingOldest(max(values.count, 1))) { continuation in
+            for value in values { continuation.yield(value) }
+            continuation.finish()
+        }
+    }
+}

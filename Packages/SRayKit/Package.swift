@@ -11,6 +11,8 @@ let package = Package(
         .library(name: "SpeechPlatform", targets: ["SpeechPlatform"])
     ],
     targets: [
+        .target(name: "SignMT"),
+        .testTarget(name: "SignMTTests", dependencies: ["SignMT"]),
         .target(name: "ConversationCore"),
         .testTarget(name: "ConversationCoreTests", dependencies: ["ConversationCore"]),
         .target(name: "SpeechCore"),
