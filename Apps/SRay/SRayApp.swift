@@ -4,10 +4,15 @@ import SwiftUI
 /// The native app composition root shared by iPhone, iPad and Vision Pro.
 @main
 struct SRayApp: App {
-    /// The app's window, with conversation functionality explicitly unavailable.
+    @Environment(\.scenePhase) private var appPhase
+    @State private var captions = CaptionSession.makeOnDevice()
+
     var body: some Scene {
         WindowGroup {
-            ConversationView(availability: .unavailable)
+            ConversationView(session: captions)
+        }
+        .onChange(of: appPhase) { _, phase in
+            if phase == .background { captions.interrupt() }
         }
     }
 }
