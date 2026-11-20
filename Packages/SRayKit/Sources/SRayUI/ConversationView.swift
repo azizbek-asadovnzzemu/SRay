@@ -47,7 +47,7 @@ public struct ConversationView: View {
                             liveFocused = true
                         }
                     } else {
-                        primaryStartButton("Start Conversation")
+                        primaryStartButton(dynamicTypeSize.isAccessibilitySize ? "Start Captions" : "Start Conversation")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(.regularMaterial)
