@@ -6,11 +6,17 @@ let package = Package(
     name: "SRayKit",
     platforms: [.iOS(.v17), .visionOS(.v2), .macOS(.v14)],
     products: [
+        .library(name: "PoseCore", targets: ["PoseCore"]),
+        .library(name: "PosePlayback", targets: ["PosePlayback"]),
         .library(name: "SRayUI", targets: ["SRayUI"]),
         .library(name: "SpeechCore", targets: ["SpeechCore"]),
         .library(name: "SpeechPlatform", targets: ["SpeechPlatform"])
     ],
     targets: [
+        .target(name: "PoseCore"),
+        .target(name: "PosePlayback", dependencies: ["PoseCore"]),
+        .testTarget(name: "PosePlaybackTests", dependencies: ["PoseCore", "PosePlayback"]),
+        .testTarget(name: "PoseCoreTests", dependencies: ["PoseCore"]),
         .target(name: "SignMT"),
         .testTarget(name: "SignMTTests", dependencies: ["SignMT"]),
         .target(name: "ConversationCore", dependencies: ["SpeechCore"]),
