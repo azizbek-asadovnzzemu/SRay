@@ -77,6 +77,15 @@ public struct ConversationView: View {
             .navigationBarTitleDisplayMode(dynamicTypeSize.isAccessibilitySize ? .inline : .automatic)
             #endif
             .toolbar {
+                #if DEBUG
+                if let fixture, scenePhase == .active, fixture.translation.presentation.state == .enabled {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Pause Demo", systemImage: "pause", action: fixture.translation.pause)
+                            .labelStyle(.iconOnly)
+                            .accessibilityIdentifier("asl.demo.pause")
+                    }
+                }
+                #endif
                 #if os(visionOS)
                 if supportsMultipleWindows {
                     ToolbarItem(placement: .secondaryAction) {
