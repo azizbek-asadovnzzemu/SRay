@@ -1,4 +1,5 @@
 import Foundation
+import PoseCore
 
 /// Size-checked transport bytes. A pose decoder must validate them before playback.
 struct ReceivedPose: Sendable {
@@ -13,7 +14,7 @@ final class SignMTClient: Sendable {
     /// The transport ceiling, separate from the shorter first-frame deadline.
     static let timeout: TimeInterval = 15
     /// Maximum body bytes accepted from the provider.
-    static let maximumResponseBytes = 8 * 1_024 * 1_024
+    static let maximumResponseBytes = PoseDecoder.maximumEncodedBytes
     /// Upper bound before percent-encoding.
     private static let maximumTextBytes = 4_096
     /// Upper bound on the complete encoded request URL.
@@ -53,10 +54,10 @@ final class SignMTClient: Sendable {
         return submission
     }
 
-    /// Convenience for callers that already own the authorization decision.
-    func translate(_ text: String) async throws -> ReceivedPose {
+    /// Translates authorized text and returns a structurally validated pose.
+    func translate(_ text: String) async throws -> PoseSequence {
         try Task.checkCancellation()
-        return try await startTranslation(text).response()
+        return try await startTranslation(text).decodedPose()
     }
 
     /// Encodes the complete caption without splitting or silently truncating it.

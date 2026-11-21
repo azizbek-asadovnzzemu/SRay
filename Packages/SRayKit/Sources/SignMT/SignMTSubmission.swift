@@ -1,5 +1,6 @@
 import Foundation
 import os
+import PoseCore
 
 /// A started request. Consume its single result once, or cancel it from the transmission gate.
 final class SignMTSubmission: Sendable {
@@ -42,6 +43,24 @@ final class SignMTSubmission: Sendable {
         } onCancel: {
             cancel()
         }
+    }
+
+    /// Receives and structurally validates one pose for the experimental v0.2 decoder.
+    /// The caller must still validate its submission identity before displaying the result.
+    func decodedPose() async throws -> PoseSequence {
+        let received = try await response()
+        let pose: PoseSequence
+        do {
+            pose = try PoseDecoder.decode(received.bytes)
+        } catch let failure as PoseDecodingError {
+            try checkCancellation()
+            throw SignMTFailure.invalidPose(failure)
+        } catch {
+            try checkCancellation()
+            throw SignMTFailure.invalidResponse
+        }
+        try checkCancellation()
+        return pose
     }
 
     private func checkCancellation() throws {

@@ -1,10 +1,47 @@
 import Foundation
 import os
+import PoseCore
 import Testing
 @testable import SignMT
 
 /// Exercises the real URLSession delegate path without giving the loader network access.
 struct SignMTDeliveryTests {
+    @Test(arguments: ["XYC", "XYZC"])
+    func decodesAValidatedPoseFromTheRealTransport(format: String) async throws {
+        let client = SignMTClient(protocolClass: SyntheticPoseProtocol.self)
+        let submission = try client.startTranslation(format)
+
+        let pose = try await submission.decodedPose()
+
+        #expect(pose.landmark(at: 0, inFrame: 0)?.z == (format == "XYZC" ? 10 : nil))
+        #expect(pose.frameCount == 2)
+        #expect(pose.framesPerSecond == 2)
+        #expect(pose.landmark(at: 0, inFrame: 0)?.x == 70)
+        #expect(pose.landmark(at: 0, inFrame: 1)?.x == 55)
+    }
+
+    @Test(arguments: [
+        ("split", SignMTFailure.invalidPose(.unsupportedVersion)),
+        ("truncated pose", .invalidPose(.truncated)),
+        ("appended pose", .invalidPose(.trailingBytes)),
+        ("rate limit", .rateLimited(retryAfter: .delay(.seconds(17)))),
+    ])
+    func typedDeliveryRejectsMalformedPosesAndPreservesTransportFailures(
+        scenario: String, expected: SignMTFailure
+    ) async {
+        let client = SignMTClient(protocolClass: SyntheticPoseProtocol.self)
+
+        await #expect(throws: expected) { try await client.translate(scenario) }
+    }
+
+    @Test func cancelledSubmissionCannotDecodeABufferedPose() async throws {
+        let client = SignMTClient(protocolClass: SyntheticPoseProtocol.self)
+        let submission = try client.startTranslation("XYC")
+        submission.cancel()
+
+        await #expect(throws: CancellationError.self) { try await submission.decodedPose() }
+    }
+
     @Test func receivesTheResponseFromAnAlreadyStartedSubmission() async throws {
         let client = SignMTClient(protocolClass: SyntheticPoseProtocol.self)
         let submission = try client.startTranslation("split")
@@ -95,7 +132,12 @@ private final class SyntheticPoseProtocol: URLProtocol, @unchecked Sendable {
         ) else { return }
         client.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
 
-        if text == "split" {
+        if let text, ["XYC", "XYZC", "truncated pose", "appended pose"].contains(text) {
+            var fixture = SyntheticPoseFixture.encoded(format: text == "XYZC" ? "XYZC" : "XYC")
+            if text == "truncated pose" { fixture.removeLast() }
+            if text == "appended pose" { fixture.append(0) }
+            client.urlProtocol(self, didLoad: fixture)
+        } else if text == "split" {
             client.urlProtocol(self, didLoad: Data([1, 2]))
             client.urlProtocol(self, didLoad: Data([3, 4]))
         } else if text == "exact" || text == "too large" {
