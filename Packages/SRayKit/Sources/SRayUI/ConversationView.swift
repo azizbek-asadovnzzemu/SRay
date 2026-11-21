@@ -196,8 +196,7 @@ public struct ConversationView: View {
                     .accessibilityFocused($liveFocused)
                     .accessibilityIdentifier("caption.live")
                 if let latest = session.lines.last {
-                    captionText(latest)
-                        .accessibilityIdentifier("caption.latest")
+                    captionRow(latest, isLatest: true)
                         .id(latest.id)
                 } else if session.phase == .listening {
                     Text("Waiting for speech…").foregroundStyle(.secondary)
@@ -213,10 +212,25 @@ public struct ConversationView: View {
                     .accessibilityAddTraits(.isHeader)
                 LazyVStack(alignment: .leading, spacing: 16) {
                     ForEach(session.lines.dropLast()) { line in
-                        captionText(line)
+                        captionRow(line)
                     }
                 }
             }
+        }
+    }
+
+    private func captionRow(_ line: CaptionLine, isLatest: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if isLatest {
+                captionText(line).accessibilityIdentifier("caption.latest")
+            } else {
+                captionText(line)
+            }
+            #if DEBUG
+            if let omission = fixture?.translation.presentation.omissions[line.id] {
+                ASLFixtureOmissionView(reason: omission)
+            }
+            #endif
         }
     }
 
