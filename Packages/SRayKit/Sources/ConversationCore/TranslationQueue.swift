@@ -3,7 +3,7 @@ import Foundation
 /// An ASL omission associated with a caption sequence in the current conversation.
 public struct TranslationOmission: Equatable, Sendable {
     /// Why no signed output will be shown for the caption.
-    public enum Reason: Equatable, Sendable {
+    public enum Reason: Hashable, Sendable {
         case capacity, expired, requestFailed, cancelled
     }
 

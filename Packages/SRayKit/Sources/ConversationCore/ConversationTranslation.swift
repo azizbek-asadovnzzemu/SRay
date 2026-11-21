@@ -36,13 +36,16 @@ package final class ConversationTranslation<Clip: Sendable> {
     package private(set) var presentation = ConversationTranslationPresentation<Clip>(
         state: .idle, ready: nil, playing: nil, canReplay: false, serviceFailed: false, omissions: [:]
     )
+    /// Aggregates the outcomes of the active conversation in memory.
+    @ObservationIgnored package private(set) var evaluation = TranslationEvaluationSummary()
+
     @ObservationIgnored private let now: @MainActor () -> ContinuousClock.Instant
     @ObservationIgnored private let startRequest: @MainActor (String) throws -> ConversationTranslationRequest<Clip>
     @ObservationIgnored private var origin: ContinuousClock.Instant?
     @ObservationIgnored private var ledger: UtteranceLedger?
     @ObservationIgnored private var sequence: UInt64 = 0
     @ObservationIgnored private var serviceFailed = false
-    @ObservationIgnored private var awaitingCaptionIDs: [UInt64: UUID] = [:]
+    @ObservationIgnored private var awaitingCaptions: [UInt64: AwaitingCaption] = [:]
     @ObservationIgnored private var omissions: [UUID: TranslationOmission.Reason] = [:]
     @ObservationIgnored private var expiryTask: Task<Void, Never>?
     @ObservationIgnored private var pending: PendingRequest?
@@ -50,6 +53,11 @@ package final class ConversationTranslation<Clip: Sendable> {
         startSubmission: { [weak self] text, token in self?.submit(text, token: token) },
         cancelSubmission: { [weak self] token in self?.cancel(token) }
     )
+
+    private struct AwaitingCaption {
+        let id: UUID?
+        let finalizedAt: Duration
+    }
 
     private struct PendingRequest {
         let token: SubmissionToken
@@ -77,13 +85,17 @@ package final class ConversationTranslation<Clip: Sendable> {
         case .finalized(let id, let text, let source, let receivedAt):
             acceptFinal(id: id, text: text, source: source, receivedAt: receivedAt)
         case .retainedCaptions(let ids):
-            awaitingCaptionIDs = awaitingCaptionIDs.filter { ids.contains($0.value) }
+            awaitingCaptions = awaitingCaptions.mapValues { caption in
+                guard let id = caption.id, !ids.contains(id) else { return caption }
+                return AwaitingCaption(id: nil, finalizedAt: caption.finalizedAt)
+            }
             omissions = omissions.filter { ids.contains($0.key) }
         case .closed(let interrupted):
             origin = nil
             ledger = nil
             serviceFailed = false
-            awaitingCaptionIDs.removeAll()
+            awaitingCaptions.removeAll()
+            evaluation = TranslationEvaluationSummary()
             omissions.removeAll()
             if interrupted { pipeline.interrupt() } else { pipeline.endConversation() }
         }
@@ -105,7 +117,9 @@ package final class ConversationTranslation<Clip: Sendable> {
         guard let elapsed else { return }
         let attempt = pipeline.beginPlayback(for: token, at: elapsed)
         record(attempt.omissions)
-        if attempt.started { awaitingCaptionIDs.removeValue(forKey: token.sequence) }
+        if attempt.started, let caption = awaitingCaptions.removeValue(forKey: token.sequence) {
+            evaluation.recordHandoff(after: elapsed - caption.finalizedAt)
+        }
         publish()
     }
 
@@ -136,7 +150,8 @@ package final class ConversationTranslation<Clip: Sendable> {
         sequence += 1
         guard ledger?.begin(sequence: sequence, startedAt: start, window: window) == true,
               let final = ledger?.finalize(sequence: sequence, text: text, endedAt: end, window: window) else { return }
-        awaitingCaptionIDs[final.sequence] = id
+        guard case .eligible = final.eligibility else { return }
+        awaitingCaptions[final.sequence] = AwaitingCaption(id: id, finalizedAt: finalizedAt)
         record(pipeline.enqueue(final, finalizedAt: finalizedAt, at: finalizedAt))
     }
 
@@ -187,7 +202,8 @@ package final class ConversationTranslation<Clip: Sendable> {
 
     private func record(_ outcomes: [TranslationOmission]) {
         for outcome in outcomes {
-            guard let id = awaitingCaptionIDs.removeValue(forKey: outcome.sequence) else { continue }
+            evaluation.recordOmission(outcome.reason)
+            guard let id = awaitingCaptions.removeValue(forKey: outcome.sequence)?.id else { continue }
             omissions[id] = outcome.reason
         }
     }

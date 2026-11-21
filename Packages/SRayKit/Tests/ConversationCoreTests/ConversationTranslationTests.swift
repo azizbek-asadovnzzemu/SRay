@@ -5,6 +5,51 @@ import Testing
 
 @MainActor
 struct ConversationTranslationTests {
+    @Test func evaluationIncludesQueueWaitAndExcludesReplay() async throws {
+        let origin = ContinuousClock.now
+        var instant = origin
+        let translation = ConversationTranslation<String>(now: { instant }) { _ in
+            ConversationTranslationRequest(result: { "Clip" }, cancel: {})
+        }
+        translation.receive(.opened(origin))
+        translation.enable()
+
+        submit(at: .seconds(1))
+        await translation.waitForRequest()
+        let first = try #require(translation.presentation.ready)
+        instant = origin.advanced(by: .seconds(2))
+        translation.beginPlayback(for: first.token)
+        let playing = try #require(translation.presentation.playing)
+
+        submit(at: .seconds(3))
+        await translation.waitForRequest()
+        #expect(translation.presentation.ready == nil)
+        translation.receive(.retainedCaptions([]))
+        instant = origin.advanced(by: .seconds(8))
+        translation.finishPlayback(id: playing.id)
+        let second = try #require(translation.presentation.ready)
+        translation.beginPlayback(for: second.token)
+        let secondPlaying = try #require(translation.presentation.playing)
+        translation.finishPlayback(id: secondPlaying.id)
+        translation.replay()
+        let replay = try #require(translation.presentation.playing)
+        #expect(replay.isReplay)
+        translation.finishPlayback(id: replay.id)
+
+        #expect(translation.evaluation.rendererHandoffs == 2)
+        #expect(translation.evaluation.longestHandoff == .seconds(5))
+        #expect(translation.evaluation.omissions.isEmpty)
+        translation.receive(.closed(interrupted: false))
+        #expect(translation.evaluation == TranslationEvaluationSummary())
+
+        func submit(at time: Duration) {
+            instant = origin.advanced(by: time)
+            translation.receive(.finalized(
+                id: UUID(), "Sample", source: .init(startedAt: instant, endedAt: instant), receivedAt: instant
+            ))
+        }
+    }
+
     @Test func onlyStoredFinalsWithVerifiedTimingInTheCurrentWindowAreSubmitted() async throws {
         let origin = ContinuousClock.now
         var instant = origin
@@ -137,6 +182,7 @@ struct ConversationTranslationTests {
         translation.pause()
         #expect(cancellations == 2)
         #expect(translation.presentation.omissions[next] == .cancelled)
+        #expect(translation.evaluation.omissions == [.capacity: 1, .expired: 2, .cancelled: 1])
         translation.receive(.retainedCaptions([overCapacity, next]))
         #expect(translation.presentation.omissions == [overCapacity: .capacity, next: .cancelled])
 
@@ -176,6 +222,7 @@ struct ConversationTranslationTests {
         let caption = try #require(captions.lines.last)
         #expect(translation.presentation.state == .paused)
         #expect(translation.presentation.omissions == [caption.id: .requestFailed])
+        #expect(translation.evaluation.omissions == [.requestFailed: 1])
 
         instant = origin.advanced(by: CaptionMemory.maximumAge)
         captions.expireCaptions()
