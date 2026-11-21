@@ -205,6 +205,42 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertFalse(live.exists)
     }
 
+    /// Visiting the Home Screen clears the pose and the enabled window before an explicit restart.
+    func testSyntheticPlaybackCannotResumeAfterBackground() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "1"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        start.tap()
+        let sample = app.buttons["asl.demo.sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        app.buttons["asl.demo.enable"].tap()
+        sample.tap()
+        let replay = app.buttons["asl.demo.replay"]
+        XCTAssertTrue(replay.waitForExistence(timeout: 15))
+
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) ||
+                      app.state == .runningBackgroundSuspended)
+        app.activate()
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        let caption = app.staticTexts["caption.latest"]
+        XCTAssertFalse(caption.exists)
+        XCTAssertFalse(replay.exists)
+
+        start.tap()
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons["asl.demo.enable"].label, "Enable Demo")
+        sample.tap()
+        XCTAssertTrue(caption.waitForExistence(timeout: 10))
+        XCTAssertFalse(replay.exists)
+        XCTAssertTrue(app.buttons["asl.demo.enable"].exists)
+    }
+
     /// Returning from the Home Screen requires a new conversation and clears previous captions.
     func testBackgroundClearsCaptionAndRequiresExplicitRestart() {
         continueAfterFailure = false
