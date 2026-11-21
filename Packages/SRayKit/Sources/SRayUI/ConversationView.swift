@@ -119,7 +119,7 @@ public struct ConversationView: View {
             }
             .frame(maxWidth: usesColumns ? 252 : .infinity, alignment: .leading)
 
-            if session.canEnd {
+            if session.canEnd && (scenePhase != .active || showsCaptionTranscript) {
                 Group {
                     if scenePhase == .active {
                         transcript
@@ -179,6 +179,14 @@ public struct ConversationView: View {
         }
     }
 
+    private var showsCaptionTranscript: Bool {
+        #if DEBUG
+        fixture?.showsCaptions ?? true
+        #else
+        true
+        #endif
+    }
+
     private var transcript: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -188,8 +196,7 @@ public struct ConversationView: View {
                     .accessibilityFocused($liveFocused)
                     .accessibilityIdentifier("caption.live")
                 if let latest = session.lines.last {
-                    captionText(latest)
-                        .accessibilityIdentifier("caption.latest")
+                    captionRow(latest, isLatest: true)
                         .id(latest.id)
                 } else if session.phase == .listening {
                     Text("Waiting for speech…").foregroundStyle(.secondary)
@@ -205,10 +212,25 @@ public struct ConversationView: View {
                     .accessibilityAddTraits(.isHeader)
                 LazyVStack(alignment: .leading, spacing: 16) {
                     ForEach(session.lines.dropLast()) { line in
-                        captionText(line)
+                        captionRow(line)
                     }
                 }
             }
+        }
+    }
+
+    private func captionRow(_ line: CaptionLine, isLatest: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if isLatest {
+                captionText(line).accessibilityIdentifier("caption.latest")
+            } else {
+                captionText(line)
+            }
+            #if DEBUG
+            if let omission = fixture?.translation.presentation.omissions[line.id] {
+                ASLFixtureOmissionView(reason: omission)
+            }
+            #endif
         }
     }
 
@@ -262,7 +284,7 @@ public struct ConversationView: View {
 
     @ViewBuilder
     private func controlButtons(returnToLive: @escaping () -> Void) -> some View {
-        if !session.lines.isEmpty && scenePhase == .active {
+        if !session.lines.isEmpty && scenePhase == .active && showsCaptionTranscript {
             Button("Return to Live", systemImage: "arrow.up", action: returnToLive)
                 .keyboardShortcut("l", modifiers: [.command, .shift])
                 .frame(minHeight: 44)

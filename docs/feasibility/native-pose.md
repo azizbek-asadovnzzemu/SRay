@@ -67,4 +67,8 @@ The shared translation pipeline owns one active display and one completed replay
 
 In Xcode, select a Debug run for SRay-iOS or SRay-visionOS and set `SRAY_SYNTHETIC_ASL=1` in the scheme’s Run environment. Start a conversation, choose **Enable Demo**, then choose **Show Sample Caption**. Wait for the motion to finish, choose **Pause Demo** and **Replay Sample**, then choose **End Conversation** to clear the sample and replay. The demo runs locally with generated geometry and a fixed caption. The ordinary launch continues to use on-device speech, and the Release build excludes the demo.
 
+Set `SRAY_SYNTHETIC_ASL=failure` to simulate an unavailable first translation. The demo shows the omitted result with its caption and requires an explicit resume. This scenario uses the local fixture.
+
 The iPhone and iPad UI tests use the same launch environment and exercise the actual caption and playback controls. Licensed pose fixtures, physical renderer validation and linguistic evaluation remain open under #5, #6 and #14.
+
+Use **Conversation Output** to choose Captions Only, Pose Only, or both. Captions Only pauses the demo and hides replay until a pose mode is selected. Pose Only keeps captions in session memory and shows them when the demo is paused or unavailable. Selecting a pose layout leaves the current enable state in place.

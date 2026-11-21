@@ -13,8 +13,13 @@ struct SRayApp: App {
     #if DEBUG
     private static let runsCaptionAudit = ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_CAPTIONS"] == "1"
         && ProcessInfo.processInfo.environment["SRAY_CAPTION_AUDIT"] == "1"
-    private static let fixture = ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_ASL"] == "1"
-        ? ASLFixtureConversation() : nil
+    private static let fixture: ASLFixtureConversation? = {
+        switch ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_ASL"] {
+        case "1": ASLFixtureConversation()
+        case "failure": ASLFixtureConversation(failsFirstRequest: true)
+        default: nil
+        }
+    }()
     private static let auditLog = Logger(subsystem: "com.azizbekasadov.sray.audit", category: "fixture")
     #endif
 

@@ -1,4 +1,5 @@
 #if DEBUG
+import ConversationCore
 import PosePlayback
 import SwiftUI
 
@@ -14,26 +15,32 @@ struct ASLFixturePanel: View {
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
+            status(for: presentation.state, failed: presentation.serviceFailed)
+                .accessibilityIdentifier("asl.demo.status")
+
             if presentation.state == .enabled {
                 Button("Pause Demo", systemImage: "pause", action: translation.pause)
                     .accessibilityIdentifier("asl.demo.pause")
             } else {
                 Button(presentation.state == .paused ? "Resume Demo" : "Enable Demo",
-                       systemImage: "play", action: translation.enable)
+                       systemImage: "play", action: fixture.enableDemo)
                     .accessibilityIdentifier("asl.demo.enable")
             }
             if fixture.captions.phase == .listening {
                 Button("Show Sample Caption", systemImage: "captions.bubble", action: fixture.showSampleCaption)
                     .accessibilityIdentifier("asl.demo.sample")
             }
-            if let playback = presentation.playing {
-                PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
-                    translation.finishPlayback(id: playback.id)
+            ASLFixtureOutputPicker(fixture: fixture)
+            if fixture.outputMode != .captionsOnly {
+                if let playback = presentation.playing {
+                    PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
+                        translation.finishPlayback(id: playback.id)
+                    }
+                    .id(playback.id)
+                } else if presentation.canReplay {
+                    Button("Replay Sample", systemImage: "arrow.counterclockwise", action: translation.replay)
+                        .accessibilityIdentifier("asl.demo.replay")
                 }
-                .id(playback.id)
-            } else if presentation.canReplay {
-                Button("Replay Sample", systemImage: "arrow.counterclockwise", action: translation.replay)
-                    .accessibilityIdentifier("asl.demo.replay")
             }
         }
         .buttonStyle(.bordered)
@@ -41,6 +48,24 @@ struct ASLFixturePanel: View {
         .task(id: presentation.ready?.token) {
             guard let ready = presentation.ready, !Task.isCancelled else { return }
             translation.beginPlayback(for: ready.token)
+        }
+    }
+
+    @ViewBuilder
+    private func status(for state: TranslationGateState, failed: Bool) -> some View {
+        if failed {
+            Label("Demo unavailable. Resume to try again.", systemImage: "exclamationmark.triangle")
+        } else {
+            switch state {
+            case .idle, .captionsOnly:
+                Label("Demo off", systemImage: "stop.circle")
+            case .enabled:
+                Label("Demo active", systemImage: "play.circle")
+            case .paused:
+                Label("Demo paused", systemImage: "pause.circle")
+            case .interrupted:
+                Label("Demo interrupted", systemImage: "stop.circle")
+            }
         }
     }
 }

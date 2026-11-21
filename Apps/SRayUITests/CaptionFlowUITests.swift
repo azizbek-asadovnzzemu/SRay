@@ -41,6 +41,38 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertFalse(replay.exists)
     }
 
+    /// A failed local translation offers recovery and preserves the triggering caption.
+    func testSyntheticFailureKeepsCaptionUntilExplicitResume() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "failure"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        start.tap()
+        let sample = app.buttons["asl.demo.sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        app.buttons["asl.demo.enable"].tap()
+        sample.tap()
+
+        let status = app.staticTexts["asl.demo.status"]
+        let caption = app.staticTexts["caption.latest"]
+        let omission = app.staticTexts["asl.demo.omission"]
+        XCTAssertTrue(omission.waitForExistence(timeout: 10))
+        XCTAssertEqual(caption.label, "Geometric sample caption.")
+        XCTAssertEqual(status.label, "Demo unavailable. Resume to try again.")
+        XCTAssertEqual(omission.label, "Sample unavailable")
+        XCTAssertFalse(app.buttons["asl.demo.replay"].exists)
+
+        app.buttons["asl.demo.enable"].tap()
+        XCTAssertEqual(status.label, "Demo active")
+        XCTAssertTrue(caption.exists)
+        XCTAssertTrue(omission.exists)
+        XCTAssertFalse(app.buttons["asl.demo.replay"].exists)
+    }
+
     /// Viewing the disclosure preserves the existing conversation and its captions.
     func testASLPrivacyDetailsReturnToTheActiveConversation() {
         continueAfterFailure = false
@@ -69,6 +101,44 @@ final class CaptionFlowUITests: XCTestCase {
         app.buttons["asl.privacy.close"].tap()
         XCTAssertTrue(caption.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["caption.end"].exists)
+    }
+
+    /// Switching to pose-only presentation retains captions and restoring them pauses the demo.
+    func testSyntheticOutputModePreservesHiddenCaptionsWithoutResuming() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "1"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        start.tap()
+        let sample = app.buttons["asl.demo.sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        app.buttons["asl.demo.enable"].tap()
+
+        let output = app.buttons["asl.demo.output"]
+        output.tap()
+        app.buttons["Pose Only"].tap()
+        sample.tap()
+        let replay = app.buttons["asl.demo.replay"]
+        XCTAssertTrue(replay.waitForExistence(timeout: 15))
+
+        let caption = app.staticTexts["caption.latest"]
+        XCTAssertFalse(caption.exists)
+        output.tap()
+        app.buttons["Captions Only"].tap()
+        XCTAssertTrue(caption.waitForExistence(timeout: 10))
+        XCTAssertEqual(caption.label, "Geometric sample caption.")
+        XCTAssertFalse(replay.exists)
+
+        output.tap()
+        app.buttons["Captions and Pose"].tap()
+        XCTAssertTrue(app.buttons["asl.demo.enable"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons["asl.demo.enable"].label, "Resume Demo")
+        XCTAssertTrue(caption.exists)
+        XCTAssertTrue(replay.exists)
     }
 
     /// The same local conversation and its controls survive a rotation at the largest text size.
