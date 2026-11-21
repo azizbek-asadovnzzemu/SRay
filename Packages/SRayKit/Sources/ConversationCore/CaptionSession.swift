@@ -13,6 +13,7 @@ public final class CaptionSession {
     public var canEnd: Bool { origin != nil }
 
     @ObservationIgnored private let speech: SpeechSession
+    @ObservationIgnored private let events: (@MainActor (CaptionConversationEvent) -> Void)?
     @ObservationIgnored private let now: @MainActor () -> ContinuousClock.Instant
     @ObservationIgnored private var memory = CaptionMemory()
     private var origin: ContinuousClock.Instant?
@@ -22,27 +23,34 @@ public final class CaptionSession {
     @ObservationIgnored private var openWindows: Set<UUID> = []
 
     /// Creates a room for local captions around one exclusively owned microphone backend.
-    public init(backend: any SpeechBackend) {
-        speech = SpeechSession(backend: backend)
-        now = { .now }
+    public convenience init(backend: any SpeechBackend) {
+        self.init(backend: backend, now: { .now })
     }
 
     /// Creates a session with a testable monotonic time source.
-    init(backend: any SpeechBackend, now: @escaping @MainActor () -> ContinuousClock.Instant) {
+    package init(
+        backend: any SpeechBackend,
+        now: @escaping @MainActor () -> ContinuousClock.Instant,
+        events: (@MainActor (CaptionConversationEvent) -> Void)? = nil
+    ) {
         speech = SpeechSession(backend: backend)
         self.now = now
+        self.events = events
     }
 
     /// Starts or continues captions after an explicit user action.
     public func start() {
         guard requestID == nil else { return }
         let instant = now()
+        let opensConversation = origin == nil
         let origin = origin ?? instant
         self.origin = origin
         let id = UUID()
         let startedAt = origin.duration(to: instant)
         requestID = id
         phase = .preparing
+        if opensConversation { events?(.opened(origin)) }
+        guard requestID == id else { return }
         capture = Task { [weak self, speech] in
             await speech.run(onListening: {
                 guard let self, self.requestID == id else { return }
@@ -90,10 +98,18 @@ public final class CaptionSession {
 
     private func receive(_ event: SpeechEvent, id: UUID, startedAt: Duration) {
         guard requestID == id, let origin else { return }
-        let elapsed = origin.duration(to: now())
+        let instant = now()
+        let elapsed = origin.duration(to: instant)
         let result = memory.update(id: id, text: event.text, isFinal: event.isFinal, startedAt: startedAt, now: elapsed)
         lines = memory.snapshot(at: elapsed)
         scheduleExpiry()
+        if result == .stored, event.isFinal {
+            let timing = event.sourceTiming.flatMap { source in
+                source.startedAt >= origin.advanced(by: startedAt) && source.startedAt <= source.endedAt
+                    && source.endedAt <= instant ? source : nil
+            }
+            events?(.finalized(event.text, source: timing, receivedAt: instant))
+        }
         if result == .rejectedOversize {
             stopCapture()
             phase = .oversized
@@ -145,5 +161,6 @@ public final class CaptionSession {
         lines = []
         origin = nil
         phase = nextPhase
+        events?(.closed(interrupted: nextPhase == .interrupted))
     }
 }

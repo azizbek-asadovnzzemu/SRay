@@ -1,5 +1,16 @@
 import Foundation
 
+/// Verified source boundaries on the same monotonic clock as the conversation.
+public struct SpeechSourceTiming: Equatable, Sendable {
+    public let startedAt: ContinuousClock.Instant
+    public let endedAt: ContinuousClock.Instant
+
+    public init(startedAt: ContinuousClock.Instant, endedAt: ContinuousClock.Instant) {
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+    }
+}
+
 /// A recognition snapshot scoped to one backend recognition request.
 public struct SpeechEvent: Equatable, Sendable {
     /// Recognized text, held only in memory by the session owner.
@@ -7,10 +18,14 @@ public struct SpeechEvent: Equatable, Sendable {
     /// Whether recognition has finalized this snapshot.
     public let isFinal: Bool
 
+    /// Source timing supplied by the backend when its audio boundaries are verified.
+    public let sourceTiming: SpeechSourceTiming?
+
     /// Creates an immutable recognition snapshot.
-    public init(text: String, isFinal: Bool) {
+    public init(text: String, isFinal: Bool, sourceTiming: SpeechSourceTiming? = nil) {
         self.text = text
         self.isFinal = isFinal
+        self.sourceTiming = sourceTiming
     }
 }
 

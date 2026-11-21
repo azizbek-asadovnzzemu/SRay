@@ -1,6 +1,6 @@
 # Transmission gate
 
-Issues #11 and #13. The gate and first-frame queue share a coordinator. The app still needs verified speech boundaries, transport and renderer wiring.
+Issues #11 and #13. The gate and first-frame queue share a coordinator. The shared conversation model connects accepted caption finals to the gate. Production capture still needs verified speech timing.
 
 Share one main-actor `TranslationPipeline` across conversation windows. It owns the `TranslationGate`. A conversation starts captions-only with a fresh ID. Explicit enable/resume opens a new translation window. Snapshot it at each source utterance start as described in [the ledger contract](utterances.md). There is no implicit enable on startup, recovery or completion.
 
@@ -24,6 +24,8 @@ Eight gate test functions cover fourteen scenarios with synchronous main-actor o
 
 Run `swift test --package-path Packages/SRayKit`. The coordinator tests exercise the production gate and queue together with a synthetic transport and monotonic event times. Hosted CI also compiles the package for iOS and visionOS.
 
-## Outstanding integration
+## Caption integration
 
-No actual text request starts in this PR. Provider access/retention remains #2, the transport adapter is #12, and disclosure/control UI is #15. The integration must call pause/stop on the same shared gate before acknowledging the action, connect its cancellation hook to transport tasks, stop capture for end/interruption, and leave capture running for ASL pause. Hardware/network race tests must verify those complete flows before issue #11 closes. Unit tests here establish gate behavior, not network cancellation or physical-device privacy.
+The caption session opens and closes the shared gate and forwards stored finals with verified monotonic audio boundaries. A caption can reach the translation pipeline only if its audio began after the current enable window opened. A final with missing timing, out-of-range timing or a start exactly at the enable boundary stays local. Pausing invalidates the window and cancels the current translation before returning. Captions continue until the conversation ends or is interrupted.
+
+The platform speech backend currently supplies captions without verified audio boundaries. The Debug fixture provides controlled timing for the integration path. Live activation still depends on physical-device timing and cancellation evidence, authorized provider access and review of the complete consent flow.
