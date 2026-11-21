@@ -23,21 +23,24 @@ struct ASLFixturePanel: View {
                     .accessibilityIdentifier("asl.demo.pause")
             } else {
                 Button(presentation.state == .paused ? "Resume Demo" : "Enable Demo",
-                       systemImage: "play", action: translation.enable)
+                       systemImage: "play", action: fixture.enableDemo)
                     .accessibilityIdentifier("asl.demo.enable")
             }
             if fixture.captions.phase == .listening {
                 Button("Show Sample Caption", systemImage: "captions.bubble", action: fixture.showSampleCaption)
                     .accessibilityIdentifier("asl.demo.sample")
             }
-            if let playback = presentation.playing {
-                PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
-                    translation.finishPlayback(id: playback.id)
+            ASLFixtureOutputPicker(fixture: fixture)
+            if fixture.outputMode != .captionsOnly {
+                if let playback = presentation.playing {
+                    PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
+                        translation.finishPlayback(id: playback.id)
+                    }
+                    .id(playback.id)
+                } else if presentation.canReplay {
+                    Button("Replay Sample", systemImage: "arrow.counterclockwise", action: translation.replay)
+                        .accessibilityIdentifier("asl.demo.replay")
                 }
-                .id(playback.id)
-            } else if presentation.canReplay {
-                Button("Replay Sample", systemImage: "arrow.counterclockwise", action: translation.replay)
-                    .accessibilityIdentifier("asl.demo.replay")
             }
         }
         .buttonStyle(.bordered)
