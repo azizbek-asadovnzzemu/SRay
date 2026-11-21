@@ -31,6 +31,7 @@ package struct ConversationTranslationPresentation<Clip: Sendable> {
     package let state: TranslationGateState
     package let ready: PreparedTranslation<Clip>?
     package let playing: ActiveTranslation<Clip>?
+    package let playbackStartedAt: ContinuousClock.Instant?
     package let canReplay: Bool
     package let serviceFailed: Bool
     package let omissions: [UUID: TranslationOmission.Reason]
@@ -41,7 +42,7 @@ package struct ConversationTranslationPresentation<Clip: Sendable> {
 @MainActor @Observable
 package final class ConversationTranslation<Clip: Sendable> {
     package private(set) var presentation = ConversationTranslationPresentation<Clip>(
-        state: .idle, ready: nil, playing: nil, canReplay: false, serviceFailed: false, omissions: [:], captionLimits: [:]
+        state: .idle, ready: nil, playing: nil, playbackStartedAt: nil, canReplay: false, serviceFailed: false, omissions: [:], captionLimits: [:]
     )
     /// Aggregates the outcomes of the active conversation in memory.
     @ObservationIgnored package private(set) var evaluation = TranslationEvaluationSummary()
@@ -66,6 +67,13 @@ package final class ConversationTranslation<Clip: Sendable> {
         let id: UUID?
         let finalizedAt: Duration
     }
+
+    private struct PlaybackClock {
+        let id: UUID
+        let startedAt: ContinuousClock.Instant
+    }
+
+    @ObservationIgnored private var playbackClock: PlaybackClock?
 
     private struct PendingRequest {
         let token: SubmissionToken
@@ -130,6 +138,13 @@ package final class ConversationTranslation<Clip: Sendable> {
         if attempt.started, let caption = awaitingCaptions.removeValue(forKey: token.sequence) {
             evaluation.recordHandoff(after: elapsed - caption.finalizedAt)
         }
+        publish()
+    }
+
+    /// Starts the shared clock when the first view mounts for the current attempt.
+    package func attachPlaybackView(id: UUID) {
+        guard pipeline.activePlayback?.id == id, playbackClock?.id != id else { return }
+        playbackClock = PlaybackClock(id: id, startedAt: now())
         publish()
     }
 
@@ -227,8 +242,11 @@ package final class ConversationTranslation<Clip: Sendable> {
     }
 
     private func publish() {
+        let playing = pipeline.activePlayback
+        if playbackClock?.id != playing?.id { playbackClock = nil }
         presentation = ConversationTranslationPresentation(
-            state: pipeline.state, ready: pipeline.readyForPlayback, playing: pipeline.activePlayback,
+            state: pipeline.state, ready: pipeline.readyForPlayback, playing: playing,
+            playbackStartedAt: playbackClock?.startedAt,
             canReplay: pipeline.canReplay, serviceFailed: serviceFailed, omissions: omissions, captionLimits: captionLimits
         )
 

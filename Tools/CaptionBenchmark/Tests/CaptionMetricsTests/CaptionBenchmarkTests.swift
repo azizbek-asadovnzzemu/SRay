@@ -26,6 +26,7 @@ struct CaptionBenchmarkTests {
         #expect(report.insertions == 1)
         #expect(report.recognitionFailures == 1)
         #expect(report.wordErrorRate == 0.8)
+        #expect(report.coldStart == nil)
     }
 
     @Test func preservesAccuracyAboveOneHundredPercent() throws {
@@ -111,6 +112,37 @@ struct CaptionBenchmarkTests {
 
         // Act and assert
         #expect(throws: CaptionBenchmarkError.invalidTokens) { try CaptionBenchmark.score(input) }
+    }
+
+    @Test func reportsColdStartsSeparatelyAndKeepsFailuresInTheRank() throws {
+        let input = try decode("""
+        {
+          "utterances": [],
+          "wordObservations": [
+            {"spokenWordEndMilliseconds": 100, "firstVisiblePartialMilliseconds": 150}
+          ],
+          "coldStarts": [
+            {"startActionMilliseconds": 300, "firstVisibleCaptionMilliseconds": 1100},
+            {"startActionMilliseconds": 900, "firstVisibleCaptionMilliseconds": null}
+          ]
+        }
+        """)
+        let report = try CaptionBenchmark.score(input)
+        let cold = try #require(report.coldStart)
+        #expect(report.allWordP95Milliseconds == 50)
+        #expect(cold.attempts == 2)
+        #expect(cold.missingCaptions == 1)
+        #expect(cold.allAttemptP95Milliseconds == nil)
+        #expect(cold.displayedCaptionP95Milliseconds == 800)
+    }
+
+    @Test(arguments: [(-1, 1), (4, 3)])
+    func rejectsInvalidColdStartIntervals(start: Int, visible: Int) {
+        let observation = CaptionBenchmarkInput.ColdStartObservation(
+            startActionMilliseconds: start, firstVisibleCaptionMilliseconds: visible
+        )
+        let input = CaptionBenchmarkInput(utterances: [], wordObservations: [], coldStarts: [observation])
+        #expect(throws: CaptionBenchmarkError.invalidTiming) { try CaptionBenchmark.score(input) }
     }
 
     private func decode(_ json: String) throws -> CaptionBenchmarkInput {

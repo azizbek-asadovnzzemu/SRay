@@ -5,30 +5,51 @@ import SwiftUI
 /// An experimental viewer for an already validated and locally retained clip.
 public struct PosePlaybackView: View {
     private let presentation: PosePresentation
+    private let sharedStartedAt: ContinuousClock.Instant?
+    private let onStart: (@MainActor () -> Void)?
     private let onFinish: (@MainActor () -> Void)?
     @State private var playhead = PosePlayhead()
     @State private var origin = ContinuousClock.now
+    @State private var completedSharedPlayback = false
 
     /// Creates a stopped viewer. Playing and replaying both require user input.
     public init(presentation: PosePresentation) {
         self.presentation = presentation
+        sharedStartedAt = nil
+        onStart = nil
         onFinish = nil
     }
 
     /// Creates an automatically played clip whose owner supplies the replay controls.
     public init(presentation: PosePresentation, onFinish: @escaping @MainActor () -> Void) {
         self.presentation = presentation
+        sharedStartedAt = nil
+        onStart = nil
+        self.onFinish = onFinish
+    }
+
+    /// Presents a shared attempt at its current position, including in a late-opening window.
+    package init(
+        presentation: PosePresentation,
+        sharedStartedAt: ContinuousClock.Instant?,
+        onStart: @escaping @MainActor () -> Void,
+        onFinish: @escaping @MainActor () -> Void
+    ) {
+        self.presentation = presentation
+        self.sharedStartedAt = sharedStartedAt
+        self.onStart = onStart
         self.onFinish = onFinish
     }
 
     public var body: some View {
         let sequence = presentation.sequence
         VStack(alignment: .leading, spacing: 12) {
-            TimelineView(.animation(minimumInterval: 1 / Double(sequence.framesPerSecond), paused: !playhead.isPlaying)) { _ in
+            TimelineView(.animation(minimumInterval: 1 / Double(sequence.framesPerSecond), paused: timelinePaused)) { _ in
                 let instant = elapsedSinceOrigin
-                let elapsed = playhead.elapsed(at: instant, duration: sequence.durationSeconds)
-                let frame = playhead.frame(at: instant, framesPerSecond: Double(sequence.framesPerSecond),
-                                           frameCount: sequence.frameCount)
+                let displayedPlayhead = sharedStartedAt.map { PosePlayhead(startedAt: origin.duration(to: $0)) } ?? playhead
+                let elapsed = displayedPlayhead.elapsed(at: instant, duration: sequence.durationSeconds)
+                let frame = displayedPlayhead.frame(at: instant, framesPerSecond: Double(sequence.framesPerSecond),
+                                                    frameCount: sequence.frameCount)
                 VStack(alignment: .leading) {
                     Canvas { context, size in
                         draw(frame: frame, in: context, size: size)
@@ -39,11 +60,14 @@ public struct PosePlaybackView: View {
                         .monospacedDigit()
                         .accessibilityLabel(Text(Duration.seconds(elapsed), format: .units(allowed: [.minutes, .seconds])))
                 }
-                .onChange(of: elapsed >= sequence.durationSeconds) { _, ended in
-                    if ended {
+                .onChange(of: elapsed >= sequence.durationSeconds, initial: onStart != nil) { _, ended in
+                    guard ended, !completedSharedPlayback else { return }
+                    if onStart == nil {
                         playhead.pause(at: elapsedSinceOrigin, duration: sequence.durationSeconds)
-                        onFinish?()
+                    } else {
+                        completedSharedPlayback = true
                     }
+                    onFinish?()
                 }
             }
 
@@ -56,9 +80,20 @@ public struct PosePlaybackView: View {
             }
         }
         .onAppear {
-            if onFinish != nil { playhead.play(at: elapsedSinceOrigin) }
+            if let onStart {
+                onStart()
+            } else if onFinish != nil {
+                playhead.play(at: elapsedSinceOrigin)
+            }
         }
-        .onDisappear { playhead.pause(at: elapsedSinceOrigin, duration: sequence.durationSeconds) }
+        .onDisappear {
+            if onStart == nil { playhead.pause(at: elapsedSinceOrigin, duration: sequence.durationSeconds) }
+        }
+    }
+
+    private var timelinePaused: Bool {
+        if onStart != nil { return completedSharedPlayback || sharedStartedAt == nil }
+        return !playhead.isPlaying
     }
 
     private var elapsedSinceOrigin: Duration { origin.duration(to: .now) }
