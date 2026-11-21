@@ -15,7 +15,7 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
 
-        let caption = app.staticTexts["Take the elevator to the second floor."]
+        let caption = app.staticTexts["caption.latest"]
         XCTAssertTrue(caption.waitForExistence(timeout: 5))
         let details = app.buttons["asl.privacy.details"]
         XCTAssertTrue(details.isHittable)
@@ -55,7 +55,7 @@ final class CaptionFlowUITests: XCTestCase {
         start.tap()
 
         let end = app.buttons["caption.end"]
-        let caption = app.staticTexts["Take the elevator to the second floor."]
+        let caption = app.staticTexts["caption.latest"]
         XCTAssertTrue(end.waitForExistence(timeout: 5))
         XCTAssertTrue(caption.waitForExistence(timeout: 5))
 
@@ -64,6 +64,7 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertTrue(end.isHittable)
         XCTAssertGreaterThan(app.frame.width, app.frame.height)
         XCTAssertTrue(caption.exists)
+        XCTAssertEqual(caption.label, "Take the elevator to the second floor.")
         end.tap()
 
         XCTAssertTrue(start.waitForExistence(timeout: 5))
@@ -107,7 +108,7 @@ final class CaptionFlowUITests: XCTestCase {
         let start = app.buttons["caption.start"]
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
-        let caption = app.staticTexts["Take the elevator to the second floor."]
+        let caption = app.staticTexts["caption.latest"]
         XCTAssertTrue(caption.waitForExistence(timeout: 5))
 
         XCUIDevice.shared.press(.home)

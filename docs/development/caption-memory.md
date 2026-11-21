@@ -17,3 +17,5 @@ Use a disposable simulator containing only synthetic SRay conversations. Run `py
 CI boots the selected simulator before running the suite. The audit checks regular files in the app’s data container, including its caches, and queries unified logs for the SRay process over a relative test window. It searches for the fixed caption as UTF-8 and UTF-16 text. A match or unavailable source fails the job. Output contains counts, channel status, and the subsystem and category of matching log entries. Test records, raw logs and app files stay out of published artifacts.
 
 Run `PYTHONPATH=scripts python3 -B -m unittest discover -s scripts/tests` to calibrate the scanner with positive file and log fixtures. This is an exact-text audit. Compressed data, physical app-switcher snapshots, crash reports and transcript-bearing provider diagnostics still need separate validation.
+
+Use the latest caption’s accessibility identifier in UI-test selectors. Read its label separately when checking text so the test runner does not use the caption as a query predicate.
