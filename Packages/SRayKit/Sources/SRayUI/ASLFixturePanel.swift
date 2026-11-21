@@ -33,7 +33,11 @@ struct ASLFixturePanel: View {
             ASLFixtureOutputPicker(fixture: fixture)
             if fixture.outputMode != .captionsOnly {
                 if let playback = presentation.playing {
-                    PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
+                    PosePlaybackView(
+                        presentation: PosePresentation(sequence: playback.translation.clip),
+                        sharedStartedAt: presentation.playbackStartedAt,
+                        onStart: { translation.attachPlaybackView(id: playback.id) }
+                    ) {
                         fixture.finishPlayback(id: playback.id)
                     }
                     .id(playback.id)
