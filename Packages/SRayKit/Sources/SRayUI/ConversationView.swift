@@ -234,6 +234,8 @@ public struct ConversationView: View {
             #if DEBUG
             if let omission = fixture?.translation.presentation.omissions[line.id] {
                 ASLFixtureOmissionView(reason: omission)
+            } else if let limit = fixture?.translation.presentation.captionLimits[line.id] {
+                ASLFixtureOmissionView(limit: limit)
             }
             #endif
         }

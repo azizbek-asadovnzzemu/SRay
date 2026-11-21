@@ -141,6 +141,30 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertTrue(replay.exists)
     }
 
+    /// An over-limit sample remains readable in full and produces no replay.
+    func testSyntheticOverLimitCaptionStaysLocal() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "over-limit"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        start.tap()
+        let sample = app.buttons["asl.demo.sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        app.buttons["asl.demo.enable"].tap()
+        sample.tap()
+
+        let limitation = app.staticTexts["asl.demo.omission"]
+        XCTAssertTrue(limitation.waitForExistence(timeout: 10))
+        XCTAssertEqual(limitation.label, "Sample exceeds the text limit")
+        let caption = app.staticTexts["caption.latest"]
+        XCTAssertEqual(caption.label, String(repeating: "Sample ", count: 39) + "Do not take the stairs.")
+        XCTAssertFalse(app.buttons["asl.demo.replay"].exists)
+    }
+
     /// The same local conversation and its controls survive a rotation at the largest text size.
     func testCaptionConversationSurvivesRotationAtLargestTextSize() throws {
         continueAfterFailure = false

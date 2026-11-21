@@ -21,10 +21,14 @@ public final class ASLFixtureConversation {
     /// Creates a demo with a locally generated geometric pose.
     public init?(
         failsFirstRequest: Bool = false,
+        usesOverLimitSample: Bool = false,
         onAuditCompletion: (@MainActor () -> Void)? = nil
     ) {
         guard let clip = try? PoseDecoder.decode(SyntheticPoseFixture.encoded()) else { return nil }
-        let speech = ASLFixtureSpeech()
+        let sampleText = usesOverLimitSample
+            ? String(repeating: "Sample ", count: 39) + "Do not take the stairs."
+            : "Geometric sample caption."
+        let speech = ASLFixtureSpeech(sampleText: sampleText)
         var shouldFail = failsFirstRequest
         let translation = ConversationTranslation<PoseSequence> { _ in
             if shouldFail {
@@ -89,8 +93,13 @@ private struct SampleRequestUnavailable: Error {}
 
 @MainActor
 private final class ASLFixtureSpeech: SpeechBackend {
+    let sampleText: String
     var supportsOnDeviceRecognition: Bool { true }
     private var events: AsyncThrowingStream<SpeechEvent, Error>.Continuation?
+
+    init(sampleText: String) {
+        self.sampleText = sampleText
+    }
 
     func requestAuthorization() async -> Bool { true }
 
@@ -110,7 +119,7 @@ private final class ASLFixtureSpeech: SpeechBackend {
         self.events = nil
         let instant = ContinuousClock.now
         events.yield(SpeechEvent(
-            text: "Geometric sample caption.", isFinal: true,
+            text: sampleText, isFinal: true,
             sourceTiming: SpeechSourceTiming(startedAt: instant, endedAt: instant)
         ))
         events.finish()
