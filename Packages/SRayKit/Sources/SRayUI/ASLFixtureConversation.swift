@@ -12,11 +12,16 @@ public final class ASLFixtureConversation {
     private let speech: ASLFixtureSpeech
 
     /// Creates a demo with a locally generated geometric pose.
-    public init?() {
+    public init?(failsFirstRequest: Bool = false) {
         guard let clip = try? PoseDecoder.decode(SyntheticPoseFixture.encoded()) else { return nil }
         let speech = ASLFixtureSpeech()
+        var shouldFail = failsFirstRequest
         let translation = ConversationTranslation<PoseSequence> { _ in
-            ConversationTranslationRequest(result: { clip }, cancel: {})
+            if shouldFail {
+                shouldFail = false
+                throw SampleRequestUnavailable()
+            }
+            return ConversationTranslationRequest(result: { clip }, cancel: {})
         }
         self.speech = speech
         self.translation = translation
@@ -27,6 +32,8 @@ public final class ASLFixtureConversation {
         speech.showSampleCaption()
     }
 }
+
+private struct SampleRequestUnavailable: Error {}
 
 @MainActor
 private final class ASLFixtureSpeech: SpeechBackend {

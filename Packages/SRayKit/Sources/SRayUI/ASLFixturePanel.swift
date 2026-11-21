@@ -1,4 +1,5 @@
 #if DEBUG
+import ConversationCore
 import PosePlayback
 import SwiftUI
 
@@ -13,6 +14,9 @@ struct ASLFixturePanel: View {
             Text("Synthetic pose demo")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
+
+            status(for: presentation.state, failed: presentation.serviceFailed)
+                .accessibilityIdentifier("asl.demo.status")
 
             if presentation.state == .enabled {
                 Button("Pause Demo", systemImage: "pause", action: translation.pause)
@@ -41,6 +45,24 @@ struct ASLFixturePanel: View {
         .task(id: presentation.ready?.token) {
             guard let ready = presentation.ready, !Task.isCancelled else { return }
             translation.beginPlayback(for: ready.token)
+        }
+    }
+
+    @ViewBuilder
+    private func status(for state: TranslationGateState, failed: Bool) -> some View {
+        if failed {
+            Label("Demo unavailable. Resume to try again.", systemImage: "exclamationmark.triangle")
+        } else {
+            switch state {
+            case .idle, .captionsOnly:
+                Label("Demo off", systemImage: "stop.circle")
+            case .enabled:
+                Label("Demo active", systemImage: "play.circle")
+            case .paused:
+                Label("Demo paused", systemImage: "pause.circle")
+            case .interrupted:
+                Label("Demo interrupted", systemImage: "stop.circle")
+            }
         }
     }
 }
