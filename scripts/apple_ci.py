@@ -1,4 +1,4 @@
-"""Run unsigned Apple builds or discover and test repository Swift packages."""
+"""Run unsigned Apple builds, simulator app tests and Swift package tests."""
 import json
 import os
 from pathlib import Path
@@ -7,7 +7,8 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 mode = sys.argv[1]
-assert mode in {'ios', 'visionos', 'packages'}, 'Unknown CI mode'
+simulator_families = {'iphone-ui': 'iPhone', 'ipad-ui': 'iPad'}
+assert mode in {'ios', 'visionos', 'packages', *simulator_families}, 'Unknown CI mode'
 output = Path(os.environ.get('RUNNER_TEMP', '/tmp')) / 'sray-ci' / mode
 output.mkdir(parents=True, exist_ok=True)
 results = []
@@ -30,8 +31,38 @@ def package_manifest(path):
     return json.loads(result.stdout)
 
 
+def simulator_id(family):
+    """Select an available simulator of the requested family on the newest installed iOS runtime."""
+    devices = subprocess.run(
+        ['xcrun', 'simctl', 'list', 'devices', 'available', '--json'],
+        cwd=root, check=True, capture_output=True, text=True,
+    )
+    runtime_prefix = 'com.apple.CoreSimulator.SimRuntime.iOS-'
+    type_prefix = f'com.apple.CoreSimulator.SimDeviceType.{family}'
+    requested = os.environ.get('SRAY_SIMULATOR_UDID', '').upper()
+    candidates = []
+    for runtime, entries in json.loads(devices.stdout)['devices'].items():
+        if not runtime.startswith(runtime_prefix):
+            continue
+        version = tuple(int(component) for component in runtime.removeprefix(runtime_prefix).split('-'))
+        for device in entries:
+            if (device['isAvailable'] and device['deviceTypeIdentifier'].startswith(type_prefix)
+                    and (not requested or device['udid'].upper() == requested)):
+                candidates.append((version, device['name'], device['udid']))
+    if not candidates:
+        print(f'No available {family} simulator matches the selected runtime or override.', file=sys.stderr)
+        raise RuntimeError('Missing simulator')
+    return max(candidates)[2]
+
+
 try:
-    if mode == 'packages':
+    if mode in simulator_families:
+        family = simulator_families[mode]
+        run(f'{family}: app UI tests', ['xcodebuild', '-project', 'SRay.xcodeproj', '-scheme', 'SRay-iOS',
+            '-destination', f'platform=iOS Simulator,id={simulator_id(family)}',
+            '-derivedDataPath', str(output / 'DerivedData'), '-parallel-testing-enabled', 'NO',
+            '-testLanguage', 'en', '-testRegion', 'US', 'CODE_SIGNING_ALLOWED=NO', 'test'])
+    elif mode == 'packages':
         for package in packages:
             path = package.parent
             has_tests = any(t['type'] == 'test' for t in package_manifest(path)['targets'])
