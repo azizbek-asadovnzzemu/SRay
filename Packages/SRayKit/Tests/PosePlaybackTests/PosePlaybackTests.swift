@@ -26,6 +26,14 @@ struct PosePlaybackTests {
         #expect(playhead.frame(at: .seconds(25), framesPerSecond: 2, frameCount: 3) == 0)
     }
 
+    @Test func lateWindowUsesTheSharedPlaybackPosition() {
+        let originalWindow = PosePlayhead(startedAt: .seconds(2))
+        let lateWindow = PosePlayhead(startedAt: .milliseconds(-350))
+        #expect(originalWindow.frame(at: .milliseconds(2_750), framesPerSecond: 10, frameCount: 20) == 7)
+        #expect(lateWindow.frame(at: .milliseconds(400), framesPerSecond: 10, frameCount: 20) == 7)
+        #expect(lateWindow.frame(at: .seconds(4), framesPerSecond: 10, frameCount: 20) == 19)
+    }
+
     @Test(arguments: [CGSize(width: 100, height: 300), CGSize(width: 300, height: 100)])
     func projectionFitsFullClipWithoutMirroring(size: CGSize) throws {
         // Arrange
