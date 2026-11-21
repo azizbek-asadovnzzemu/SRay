@@ -12,6 +12,15 @@ struct SignMTDeliveryTests {
         #expect(pose.bytes == Data([1, 2, 3, 4]))
     }
 
+    @Test func acceptsAResponseAtTheSizeLimit() async throws {
+        let client = SignMTClient(protocolClass: SyntheticPoseProtocol.self)
+        let submission = try client.startTranslation("exact")
+
+        let pose = try await submission.response()
+
+        #expect(pose.bytes.count == SignMTClient.maximumResponseBytes)
+    }
+
     @Test(arguments: [
         ("empty", SignMTFailure.invalidResponse),
         ("too large", .responseTooLarge),
@@ -89,9 +98,9 @@ private final class SyntheticPoseProtocol: URLProtocol, @unchecked Sendable {
         if text == "split" {
             client.urlProtocol(self, didLoad: Data([1, 2]))
             client.urlProtocol(self, didLoad: Data([3, 4]))
-        } else if text == "too large" {
+        } else if text == "exact" || text == "too large" {
             client.urlProtocol(self, didLoad: Data(count: SignMTClient.maximumResponseBytes))
-            client.urlProtocol(self, didLoad: Data([1]))
+            if text == "too large" { client.urlProtocol(self, didLoad: Data([1])) }
         }
         client.urlProtocolDidFinishLoading(self)
     }
