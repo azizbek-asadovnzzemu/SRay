@@ -8,10 +8,12 @@ The capture integration must register the actual source start, not the arrival o
 
 At begin, retain the enabled translation window. At finalization, require the same window and a source start at or after its opening. A new enable/resume requires a fresh identity even when timestamps are equal. Paused, pre-enable and boundary-crossing speech stays local. Partials can be accepted for captions, but the ledger produces submission eligibility only on finalization. Issue #11 must recheck that window when actually dispatching and reject late results after invalidation.
 
-Text over 280 extended grapheme clusters or speech over fifteen seconds is excluded from ASL with an explicit reason. The full caption is returned unchanged: no silent truncation, automatic splitting or lost negation. Empty text is excluded. The future UI must surface omissions and the conversation store must apply the separate retention/memory limits in #16.
+Text over 280 extended grapheme clusters or speech over fifteen seconds is excluded from ASL with an explicit reason. The full caption is returned unchanged: no silent truncation, automatic splitting or lost negation. Empty text is excluded. The conversation keeps a caption-level limit notice for verified speech rejected by either bound. Excluded utterances never enter pending queue bookkeeping. The synthetic pose demo can show the notice beside the whole caption. Caption eviction and conversation teardown clear the notice.
 
 ## Verification
 
 Run `swift test --package-path Packages/SRayKit`. Nine ledger test functions cover fifteen scenarios, including exact/over-limit emoji graphemes and durations, corrected final text, duplicate finals, interruption/restart overlap, unknown timing, empty text and equal-timestamp epoch changes. Removing the epoch comparison locally made the boundary tests fail; restoring it passed. The twelve speech lifecycle test functions also remain passing.
 
 This branch is stacked on mrst-9 (PR #47), which depends on mrst-8 (PR #46). PRs still target develop; merge prerequisites first and update downstream branches before merging. Hosted CI compiles all packages for both native SDKs and runs package tests.
+
+Run the Debug app with `SRAY_SYNTHETIC_ASL=over-limit`. Start a conversation, enable the demo, and show the sample caption to check the text-limit notice and the full retained text.

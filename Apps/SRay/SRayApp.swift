@@ -17,6 +17,7 @@ struct SRayApp: App {
         switch ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_ASL"] {
         case "1": ASLFixtureConversation()
         case "failure": ASLFixtureConversation(failsFirstRequest: true)
+        case "over-limit": ASLFixtureConversation(usesOverLimitSample: true)
         case "audit":
             ASLFixtureConversation(onAuditCompletion: {
                 SRayApp.auditLog.notice("Synthetic pose audit ready")
