@@ -1,4 +1,5 @@
 import Foundation
+import PoseCore
 
 /// Content-free outcomes for the observed Sign MT transport contract.
 enum SignMTFailure: Error, Equatable, Sendable {
@@ -12,6 +13,7 @@ enum SignMTFailure: Error, Equatable, Sendable {
     case unavailable
     case unexpectedStatus(Int)
     case invalidResponse
+    case invalidPose(PoseDecodingError)
     case responseTooLarge
 }
 
