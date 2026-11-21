@@ -1,12 +1,13 @@
 from contextlib import redirect_stderr, redirect_stdout
 import io
+import json
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from audit_caption_artifacts import CAPTION, CHUNK_BYTES, contains_caption, main, scan_container
+from audit_caption_artifacts import CAPTION, CHUNK_BYTES, contains_caption, main, scan_container, scan_log_events
 
 
 class CaptionArtifactAuditTests(unittest.TestCase):
@@ -18,6 +19,16 @@ class CaptionArtifactAuditTests(unittest.TestCase):
 
     def test_ordinary_metadata_does_not_match(self):
         self.assertFalse(contains_caption(io.BytesIO(b'caption phase=ready')))
+
+    def test_reports_only_safe_labels_for_matching_log_events(self):
+        events = [
+            {'subsystem': 'com.apple.fixture', 'category': 'accessibility', 'eventMessage': CAPTION},
+            {'subsystem': 'com.apple.fixture', 'category': CAPTION, 'eventMessage': CAPTION},
+            {'subsystem': 'com.apple.fixture', 'category': 'unmatched', 'eventMessage': 'Ready'},
+        ]
+        logs = io.BytesIO('\n'.join(json.dumps(event) for event in events).encode())
+        self.assertEqual(scan_log_events(logs), {('com.apple.fixture', 'accessibility'),
+                                                ('com.apple.fixture', 'unavailable')})
 
     def test_counts_matches_and_excludes_links_outside_the_container(self):
         with tempfile.TemporaryDirectory() as directory:
