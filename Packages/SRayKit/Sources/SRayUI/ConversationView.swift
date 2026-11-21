@@ -22,11 +22,25 @@ public struct ConversationView: View {
     @State private var showsASLPrivacy = false
     @AccessibilityFocusState private var liveFocused: Bool
     private let session: CaptionSession
+    #if DEBUG
+    private let fixture: ASLFixtureConversation?
+    #endif
 
     /// Creates a window for the app-owned caption session.
     public init(session: CaptionSession) {
         self.session = session
+        #if DEBUG
+        fixture = nil
+        #endif
     }
+
+    #if DEBUG
+    /// Presents an isolated synthetic geometry demo around its shared caption session.
+    public init(fixture: ASLFixtureConversation) {
+        session = fixture.captions
+        self.fixture = fixture
+    }
+    #endif
 
     public var body: some View {
         NavigationStack {
@@ -94,6 +108,11 @@ public struct ConversationView: View {
         return layout {
             VStack(alignment: .leading, spacing: 16) {
                 sessionStatus
+                #if DEBUG
+                if let fixture, scenePhase == .active, session.canEnd {
+                    ASLFixturePanel(fixture: fixture)
+                }
+                #endif
                 if session.canEnd && session.phase != .listening && session.phase != .preparing {
                     restartControls
                 }

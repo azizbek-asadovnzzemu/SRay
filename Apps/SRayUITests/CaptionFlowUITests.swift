@@ -4,6 +4,43 @@ import XCTest
 /// Exercises the public caption controls with an in-process synthetic recognizer.
 @MainActor
 final class CaptionFlowUITests: XCTestCase {
+    /// Exercises the app wiring with its explicitly enabled local geometry fixture.
+    func testSyntheticPoseCanPlayReplayAndClearOnEnd() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "1"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        start.tap()
+
+        let enable = app.buttons["asl.demo.enable"]
+        let sample = app.buttons["asl.demo.sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        XCTAssertTrue(enable.isHittable)
+        enable.tap()
+        XCTAssertTrue(app.buttons["asl.demo.pause"].waitForExistence(timeout: 10))
+        sample.tap()
+
+        let replay = app.buttons["asl.demo.replay"]
+        XCTAssertTrue(replay.waitForExistence(timeout: 15))
+        let caption = app.staticTexts["caption.latest"]
+        XCTAssertTrue(caption.waitForExistence(timeout: 10))
+        XCTAssertEqual(caption.label, "Geometric sample caption.")
+
+        app.buttons["asl.demo.pause"].tap()
+        XCTAssertTrue(enable.waitForExistence(timeout: 10))
+        XCTAssertEqual(enable.label, "Resume Demo")
+        replay.tap()
+
+        app.buttons["caption.end"].tap()
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        XCTAssertFalse(caption.exists)
+        XCTAssertFalse(replay.exists)
+    }
+
     /// Viewing the disclosure preserves the existing conversation and its captions.
     func testASLPrivacyDetailsReturnToTheActiveConversation() {
         continueAfterFailure = false
