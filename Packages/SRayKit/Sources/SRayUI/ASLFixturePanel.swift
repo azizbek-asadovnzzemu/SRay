@@ -19,13 +19,14 @@ struct ASLFixturePanel: View {
                     .accessibilityIdentifier("asl.demo.pause")
             } else {
                 Button(presentation.state == .paused ? "Resume Demo" : "Enable Demo",
-                       systemImage: "play", action: translation.enable)
+                       systemImage: "play", action: fixture.enableDemo)
                     .accessibilityIdentifier("asl.demo.enable")
             }
             if fixture.captions.phase == .listening {
                 Button("Show Sample Caption", systemImage: "captions.bubble", action: fixture.showSampleCaption)
                     .accessibilityIdentifier("asl.demo.sample")
             }
+            ASLFixtureOutputPicker(fixture: fixture)
             if let playback = presentation.playing {
                 PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
                     translation.finishPlayback(id: playback.id)

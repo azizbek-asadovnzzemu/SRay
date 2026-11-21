@@ -1,14 +1,17 @@
 #if DEBUG
 import ConversationCore
 import Foundation
+import Observation
 import PoseCore
 import SpeechCore
 
 /// A local geometric fixture for exercising the real conversation and playback paths.
-@MainActor
+@MainActor @Observable
 public final class ASLFixtureConversation {
     public let captions: CaptionSession
     let translation: ConversationTranslation<PoseSequence>
+    /// The selected output preference shared by the demo windows.
+    private(set) var outputMode: ASLFixtureOutputMode = .captionsOnly
     private let speech: ASLFixtureSpeech
 
     /// Creates a demo with a locally generated geometric pose.
@@ -21,6 +24,25 @@ public final class ASLFixtureConversation {
         self.speech = speech
         self.translation = translation
         captions = CaptionSession(backend: speech, now: { .now }, events: translation.receive)
+    }
+
+    /// Keeps a caption fallback available whenever the demo is paused or off.
+    var showsCaptions: Bool {
+        outputMode != .poseOnly || translation.presentation.state != .enabled
+    }
+
+    /// Applies a presentation choice. Captions Only also pauses the demo.
+    func selectOutput(_ mode: ASLFixtureOutputMode) {
+        outputMode = mode
+        if mode == .captionsOnly { translation.pause() }
+    }
+
+    /// Opens a new demo window for future captions after an explicit action.
+    func enableDemo() {
+        translation.enable()
+        if translation.presentation.state == .enabled && outputMode == .captionsOnly {
+            outputMode = .captionsAndPose
+        }
     }
 
     func showSampleCaption() {
