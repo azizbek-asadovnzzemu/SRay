@@ -19,6 +19,7 @@ public struct ConversationView: View {
     @Environment(\.openURL) private var openURL
     @State private var windowID = UUID()
     @State private var textSize: CaptionTextSize = .standard
+    @State private var showsASLPrivacy = false
     @AccessibilityFocusState private var liveFocused: Bool
     private let session: CaptionSession
 
@@ -77,6 +78,7 @@ public struct ConversationView: View {
                 }
             }
         }
+        .sheet(isPresented: $showsASLPrivacy) { ASLPrivacyView() }
         .onAppear { session.windowDidOpen(windowID) }
         .onDisappear { session.windowDidClose(windowID) }
     }
@@ -122,6 +124,15 @@ public struct ConversationView: View {
             Label("ASL translation unavailable", systemImage: "hand.raised.slash")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            Button {
+                showsASLPrivacy = true
+            } label: {
+                Label("ASL Privacy Details", systemImage: "info.circle")
+                    .frame(minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityIdentifier("asl.privacy.details")
         }
     }
 
