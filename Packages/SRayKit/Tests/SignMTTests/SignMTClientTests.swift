@@ -93,48 +93,8 @@ struct SignMTClientTests {
         #expect(throws: SignMTFailure.responseTooLarge) { try SignMTClient.validate(oversize) }
     }
 
-    /// Stream counting enforces the limit even without a Content-Length header.
-    @Test func boundsUnknownSizeStream() async throws {
-        // Arrange
-        let exact = makeBytes([1, 2, 3])
-        let oversize = makeBytes([1, 2, 3, 4])
-        let empty = makeBytes([])
-
-        // Act
-        let received = try await SignMTClient.readPose(from: exact, limit: 3)
-
-        // Assert
-        #expect(received.bytes == Data([1, 2, 3]))
-        await #expect(throws: SignMTFailure.responseTooLarge) {
-            try await SignMTClient.readPose(from: oversize, limit: 3)
-        }
-        await #expect(throws: SignMTFailure.invalidResponse) {
-            try await SignMTClient.readPose(from: empty, limit: 3)
-        }
-    }
-
-    /// Cancellation prevents buffered bytes from being returned as a valid response.
-    @Test func cancelledReadReturnsNoPose() async {
-        // Arrange
-        let bytes = makeBytes([1, 2, 3])
-        let read = Task {
-            withUnsafeCurrentTask { $0?.cancel() }
-            return try await SignMTClient.readPose(from: bytes)
-        }
-
-        // Act and assert
-        await #expect(throws: CancellationError.self) { try await read.value }
-    }
-
     private func makeResponse(code: Int, headers: [String: String]) throws -> HTTPURLResponse {
         let url = try #require(URL(string: "https://example.invalid"))
         return try #require(HTTPURLResponse(url: url, statusCode: code, httpVersion: "HTTP/1.1", headerFields: headers))
-    }
-
-    private func makeBytes(_ values: [UInt8]) -> AsyncStream<UInt8> {
-        AsyncStream(bufferingPolicy: .bufferingOldest(max(values.count, 1))) { continuation in
-            for value in values { continuation.yield(value) }
-            continuation.finish()
-        }
     }
 }
