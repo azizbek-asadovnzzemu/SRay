@@ -14,7 +14,9 @@ Pause clears the active window and request identity and sets visible state befor
 
 Pass eligible finals with their finalization instant. Use the same session-relative monotonic clock for renderer and transport events. Reschedule the expiry timer to `nextExpiry` after each event and call `advance(to:)` when it fires. Expiry applies while waiting as text, in flight, or ready for a first frame. Report returned omissions against their caption sequences.
 
-Present a ready clip only after `beginPlayback(for:at:)` accepts its token. Report completion for that same token. Use `playing` to stop showing a clip on pause, failure or interruption. The renderer owns the active clip and any completed replay result. A transport failure closes the enable window and drops queued text. Reopening the window requires an explicit action after connectivity and service policy permit it.
+Present a ready clip only after `beginPlayback(for:at:)` accepts its submission. Render the current `activePlayback` and report the last displayed frame using its display ID. Each play attempt receives a new ID, including replay of the same clip. Release renderer references when the active attempt changes or clears.
+
+The pipeline keeps one completed live clip for local replay in the current conversation. Use `canReplay` and `beginReplay(at:)` when the renderer is idle and no live work is waiting. Pause stops the active display and preserves the completed clip for explicit replay. End and interruption release both cached and active clips. A transport failure closes the enable window and drops queued text. Reopening the window requires an explicit action after connectivity and service policy permit it.
 
 ## Verification
 

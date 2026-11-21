@@ -1,19 +1,29 @@
 import Foundation
 
-/// A validated clip with the identity the renderer must present at its first frame.
+/// A validated clip with the identity of its original submission.
 public struct PreparedTranslation<Clip: Sendable>: Sendable {
     /// Identifies the conversation, enable window and caption sequence.
     public let token: SubmissionToken
-    /// The validated clip awaiting its first shown frame.
+    /// The structurally validated clip from that submission.
     public let clip: Clip
+}
+
+/// One display attempt of a validated clip.
+public struct ActiveTranslation<Clip: Sendable>: Identifiable, Sendable {
+    /// Distinguishes repeated playback of the same translated utterance.
+    public let id: UUID
+    /// The original clip and caption identity.
+    public let translation: PreparedTranslation<Clip>
+    /// Whether the clip came from the session's completed replay slot.
+    public let isReplay: Bool
 }
 
 /// Coordinates a single conversation's dispatch gate and first-frame queue.
 ///
 /// Callers use one monotonic conversation clock and schedule `advance(to:)`
 /// at `nextExpiry`. The transport starts synchronously at the gate and returns
-/// validated clips or failures as separate events. The renderer owns active
-/// and replay clips and observes playback identity before displaying frames.
+/// validated clips or failures as separate events. The renderer observes the
+/// active display identity and releases its clip when that identity changes.
 @MainActor
 public final class TranslationPipeline<Clip: Sendable> {
     /// Current transmission permission across all conversation windows.
@@ -26,18 +36,20 @@ public final class TranslationPipeline<Clip: Sendable> {
     public var nextExpiry: Duration? { queue?.nextExpiry }
     /// Validated pose eligible to start display as soon as the renderer is ready.
     public var readyForPlayback: PreparedTranslation<Clip>? {
-        guard let queue, let ready = queue.readyForPlayback else { return nil }
-        return PreparedTranslation(token: playbackToken(for: ready.sequence, in: queue), clip: ready.clip)
+        guard activePlayback == nil, let queue, let ready = queue.readyForPlayback else { return nil }
+        return PreparedTranslation(token: submissionToken(for: ready.sequence, in: queue), clip: ready.clip)
     }
-    /// Active display identity. It becomes nil when the renderer must stop.
-    public var playing: SubmissionToken? {
-        guard let queue, let sequence = queue.playingSequence else { return nil }
-        return playbackToken(for: sequence, in: queue)
-    }
+    /// The current display attempt. It becomes nil when the renderer must stop.
+    public private(set) var activePlayback: ActiveTranslation<Clip>?
+    /// The source caption identity of the displayed result.
+    public var playing: SubmissionToken? { activePlayback?.translation.token }
+    /// Whether replay can start without delaying new translation or interrupting playback.
+    public var canReplay: Bool { latestCompleted != nil && activePlayback == nil && waitingCount == 0 }
 
     private let gate: TranslationGate
     private let startSubmission: @MainActor (_ text: String, _ token: SubmissionToken) -> Void
     private var queue: TranslationQueue<Clip>?
+    private var latestCompleted: PreparedTranslation<Clip>?
     private var instant: Duration = .zero
 
     /// Creates a closed pipeline with a synchronous, cancellable transport dependency.
@@ -68,6 +80,7 @@ public final class TranslationPipeline<Clip: Sendable> {
 
     /// Discards the window's pending work and invalidates callbacks before cancellation.
     public func pauseASL() -> [TranslationOmission] {
+        activePlayback = nil
         guard state == .enabled else { return [] }
         let omissions = queue?.close() ?? []
         queue = nil
@@ -78,12 +91,16 @@ public final class TranslationPipeline<Clip: Sendable> {
     /// Releases conversation-scoped work and returns to idle.
     public func endConversation() {
         queue = nil
+        activePlayback = nil
+        latestCompleted = nil
         gate.endConversation()
     }
 
     /// Ends the conversation so ASL requires a fresh conversation and explicit enable.
     public func interrupt() {
         queue = nil
+        activePlayback = nil
+        latestCompleted = nil
         gate.interrupt()
     }
 
@@ -130,17 +147,37 @@ public final class TranslationPipeline<Clip: Sendable> {
         for token: SubmissionToken, at time: Duration
     ) -> (started: Bool, omissions: [TranslationOmission]) {
         guard readyForPlayback?.token == token, let omissions = expire(to: time) else { return (false, []) }
-        if readyForPlayback?.token == token {
-            queue?.markFirstFrame(for: token.sequence)
+        guard let ready = readyForPlayback, ready.token == token,
+              queue?.markFirstFrame(for: token.sequence) == true else {
+            dispatchNext()
+            return (false, omissions)
         }
+        let playback = ActiveTranslation(id: UUID(), translation: ready, isReplay: false)
+        activePlayback = playback
         dispatchNext()
-        return (playing == token, omissions)
+        return (activePlayback?.id == playback.id, omissions)
     }
 
-    /// Releases active playback if the completion still belongs to it.
-    public func finishPlayback(for token: SubmissionToken, at time: Duration) -> [TranslationOmission] {
-        guard playing == token, let omissions = expire(to: time) else { return [] }
-        if playing == token { queue?.finishPlayback(for: token.sequence) }
+    /// Starts local replay while the current conversation is idle between signed results.
+    @discardableResult
+    public func beginReplay(at time: Duration) -> Bool {
+        guard canReplay, let completed = latestCompleted,
+              gate.sessionID == completed.token.sessionID, time >= instant else { return false }
+        instant = time
+        activePlayback = ActiveTranslation(id: UUID(), translation: completed, isReplay: true)
+        return true
+    }
+
+    /// Releases a completed display attempt and remembers the latest completed live result.
+    public func finishPlayback(for playbackID: UUID, at time: Duration) -> [TranslationOmission] {
+        guard activePlayback?.id == playbackID, let omissions = expire(to: time) else { return [] }
+        if let completed = activePlayback, completed.id == playbackID {
+            activePlayback = nil
+            if !completed.isReplay {
+                latestCompleted = completed.translation
+                queue?.finishPlayback(for: completed.translation.token.sequence)
+            }
+        }
         dispatchNext()
         return omissions
     }
@@ -169,7 +206,7 @@ public final class TranslationPipeline<Clip: Sendable> {
         }
     }
 
-    private func playbackToken(for sequence: UInt64, in queue: TranslationQueue<Clip>) -> SubmissionToken {
+    private func submissionToken(for sequence: UInt64, in queue: TranslationQueue<Clip>) -> SubmissionToken {
         SubmissionToken(sessionID: queue.sessionID, windowID: queue.windowID, sequence: sequence)
     }
 }
