@@ -9,3 +9,5 @@ The backend requires on-device recognition. ASL is unavailable in this build whi
 The local pose demo also exercises app backgrounding with a completed pose ready for replay. After returning, the prior caption and replay are cleared. Starting a new conversation restores captions and requires explicit enable before accepting another pose request. The iPhone and iPad simulator scenario verifies this flow with generated content.
 
 Use `swift test --package-path Packages/SRayKit` for the controlled-backend integration tests. Run `python3 scripts/apple_ci.py ios` and `python3 scripts/apple_ci.py visionos` for device SDK compilation. Verify microphone permission, real audio capture, offline assets, thermal behavior and assistive technology on physical devices before claiming platform support.
+
+A controlled Swift test also covers a result that arrives after the last window closes. One connected window keeps the original conversation and request alive. Closing the last window clears the caption and cancels that request. A fresh window must start and enable a new conversation, and the previous result cannot show or displace the new request.
