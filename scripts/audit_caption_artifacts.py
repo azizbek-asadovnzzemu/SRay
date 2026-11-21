@@ -48,7 +48,7 @@ def scan_container(root):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('simulator', help='Simulator UDID used only for the synthetic SRay UI suite')
-    parser.add_argument('--since', required=True, help='Simulator-local start time in YYYY-MM-DD HH:MM:SS format')
+    parser.add_argument('--last', required=True, help='Relative log collection window, for example 2m')
     arguments = parser.parse_args()
     try:
         container = subprocess.run(
@@ -59,15 +59,20 @@ def main():
         if not root:
             raise OSError('Missing app data container')
         files, matches = scan_container(Path(root))
+    except (OSError, subprocess.SubprocessError):
+        print('Caption audit could not read the app data container.', file=sys.stderr)
+        return 2
+
+    try:
         with tempfile.TemporaryFile() as logs:
             subprocess.run([
-                'xcrun', 'simctl', 'spawn', arguments.simulator, 'log', 'show', '--start', arguments.since,
+                'xcrun', 'simctl', 'spawn', arguments.simulator, 'log', 'show', '--last', arguments.last,
                 '--info', '--debug', '--predicate', 'process == "SRay"',
             ], check=True, stdout=logs, stderr=subprocess.DEVNULL, timeout=60)
             logs.seek(0)
             log_match = contains_caption(logs)
     except (OSError, subprocess.SubprocessError):
-        print('Caption audit could not inspect app files and process logs.', file=sys.stderr)
+        print('Caption audit could not export simulator process logs.', file=sys.stderr)
         return 2
 
     print(f'Scanned {files} app data files. Sentinel matches in app files: {matches}.')

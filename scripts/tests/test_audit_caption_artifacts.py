@@ -43,7 +43,7 @@ class CaptionArtifactAuditTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0)
 
             output = io.StringIO()
-            with patch('sys.argv', ['audit', 'fixture', '--since', '2020-01-01 00:00:00']), \
+            with patch('sys.argv', ['audit', 'fixture', '--last', '2m']), \
                  patch('audit_caption_artifacts.subprocess.run', side_effect=run), redirect_stdout(output):
                 self.assertEqual(main(), 1)
             self.assertIn('Sentinel in app process logs: found.', output.getvalue())
@@ -51,6 +51,19 @@ class CaptionArtifactAuditTests(unittest.TestCase):
 
     def test_missing_container_cannot_pass(self):
         unavailable = subprocess.CompletedProcess([], 0, stdout='')
-        with patch('sys.argv', ['audit', 'fixture', '--since', '2020-01-01 00:00:00']), \
-             patch('audit_caption_artifacts.subprocess.run', return_value=unavailable), redirect_stderr(io.StringIO()):
+        error = io.StringIO()
+        with patch('sys.argv', ['audit', 'fixture', '--last', '2m']), \
+             patch('audit_caption_artifacts.subprocess.run', return_value=unavailable), redirect_stderr(error):
             self.assertEqual(main(), 2)
+        self.assertIn('could not read the app data container', error.getvalue())
+
+    def test_failed_log_export_cannot_pass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            container = subprocess.CompletedProcess([], 0, stdout=directory)
+            failure = subprocess.CalledProcessError(1, ['log', 'show'])
+            error = io.StringIO()
+            with patch('sys.argv', ['audit', 'fixture', '--last', '2m']), \
+                 patch('audit_caption_artifacts.subprocess.run', side_effect=[container, failure]), \
+                 redirect_stderr(error):
+                self.assertEqual(main(), 2)
+            self.assertIn('could not export simulator process logs', error.getvalue())
