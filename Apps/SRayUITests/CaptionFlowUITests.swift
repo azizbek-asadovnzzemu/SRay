@@ -9,6 +9,7 @@ final class CaptionFlowUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "1"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
         app.launch()
 
         let start = app.buttons["caption.start"]
