@@ -40,6 +40,8 @@ Use an injected typed translation interface; keep provider URLs and binary parsi
 
 The app's request timeout and queue bounds remain local policies, not provider guarantees. Treat any response after a pause/epoch change as stale even if transport cancellation fails. The application must remain useful for offline captions when this integration is unavailable.
 
+`SignMTClient.startTranslation(_:)` resumes the ephemeral task synchronously and returns a cancellation handle. Call it inside the transmission gate and await `response()` separately. The loader checks headers before accepting bytes, enforces an 8 MiB streaming limit and rejects redirects while production destinations are unverified. The separate pose decoder must validate format and geometry before playback. Synthetic `URLProtocol` fixtures exercise the loader without making a network request.
+
 ## Coverage
 
 Pinned request path, language identifiers, synthetic compatibility and privacy risks are documented. Production authorization, quotas, versioning, retention agreement and error semantics remain outstanding. This report does not close issue #2.
