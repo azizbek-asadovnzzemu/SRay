@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from audit_caption_artifacts import (BUNDLE_ID, CAPTION, CHUNK_BYTES, READY_MESSAGE, contains_caption,
+from audit_caption_artifacts import (BUNDLE_ID, CAPTION, CHUNK_BYTES, POSE_CAPTION, POSE_READY_MESSAGE, READY_MESSAGE, contains_caption,
                                      main, scan_container, scan_log_events)
 
 
@@ -60,6 +60,69 @@ class CaptionArtifactAuditTests(unittest.TestCase):
                 self.assertEqual(main(), 1)
             self.assertIn('Sentinel in app process logs: found.', output.getvalue())
             self.assertNotIn(CAPTION, output.getvalue())
+
+    def test_pose_mode_checks_its_caption_in_files_and_process_logs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'pose-caption').write_bytes(POSE_CAPTION.encode('utf-16-le'))
+
+            def run(command, **kwargs):
+                if 'get_app_container' in command:
+                    return subprocess.CompletedProcess(command, 0, stdout=directory)
+                self.assertEqual(command[-2:], ['--predicate', 'process == "SRay"'])
+                record = {'subsystem': BUNDLE_ID, 'category': 'fixture', 'eventMessage': POSE_CAPTION}
+                kwargs['stdout'].write(json.dumps(record).encode())
+                return subprocess.CompletedProcess(command, 0)
+
+            output = io.StringIO()
+            argv = ['audit', 'fixture', '--last', '25m', '--pose-fixture']
+            with patch('sys.argv', argv), patch('audit_caption_artifacts.subprocess.run', side_effect=run), \
+                 redirect_stdout(output):
+                self.assertEqual(main(), 1)
+            self.assertIn('Sentinel matches in app files: 1', output.getvalue())
+            self.assertIn('Sentinel in app process logs: found.', output.getvalue())
+            self.assertNotIn(POSE_CAPTION, output.getvalue())
+
+    def test_standalone_pose_uses_its_own_readiness_record_and_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            commands = []
+
+            def run(command, **kwargs):
+                commands.append(command)
+                if 'launch' in command:
+                    self.assertEqual(kwargs['env']['SIMCTL_CHILD_SRAY_SYNTHETIC_ASL'], 'audit')
+                    return subprocess.CompletedProcess(command, 0, stdout=BUNDLE_ID + ': 42')
+                if 'get_app_container' in command:
+                    return subprocess.CompletedProcess(command, 0, stdout=directory)
+                if 'spawn' in command:
+                    self.assertEqual(command[-2:], ['--process', '42'])
+                    record = {'subsystem': BUNDLE_ID + '.audit', 'eventMessage': POSE_READY_MESSAGE}
+                    kwargs['stdout'].write(json.dumps(record).encode())
+                return subprocess.CompletedProcess(command, 0)
+
+            output = io.StringIO()
+            argv = ['audit', 'fixture', '--last', '3m', '--launch-fixture', '--pose-fixture']
+            with patch('sys.argv', argv), patch('audit_caption_artifacts.subprocess.run', side_effect=run), \
+                 redirect_stdout(output):
+                self.assertEqual(main(), 0)
+            self.assertIn('Verified readiness', output.getvalue())
+            self.assertIn('terminate', commands[-1])
+
+    def test_caption_readiness_cannot_pass_for_standalone_pose(self):
+        with tempfile.TemporaryDirectory() as directory:
+            def run(command, **kwargs):
+                if 'launch' in command:
+                    return subprocess.CompletedProcess(command, 0, stdout=BUNDLE_ID + ': 42')
+                if 'get_app_container' in command:
+                    return subprocess.CompletedProcess(command, 0, stdout=directory)
+                if 'spawn' in command:
+                    record = {'subsystem': BUNDLE_ID + '.audit', 'eventMessage': READY_MESSAGE}
+                    kwargs['stdout'].write(json.dumps(record).encode())
+                return subprocess.CompletedProcess(command, 0)
+
+            argv = ['audit', 'fixture', '--last', '3m', '--launch-fixture', '--pose-fixture']
+            with patch('sys.argv', argv), patch('audit_caption_artifacts.subprocess.run', side_effect=run), \
+                 patch('audit_caption_artifacts.time.sleep'), redirect_stderr(io.StringIO()):
+                self.assertEqual(main(), 2)
 
     def test_missing_container_cannot_pass(self):
         unavailable = subprocess.CompletedProcess([], 0, stdout='')

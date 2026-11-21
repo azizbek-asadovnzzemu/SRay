@@ -34,7 +34,7 @@ struct ASLFixturePanel: View {
             if fixture.outputMode != .captionsOnly {
                 if let playback = presentation.playing {
                     PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
-                        translation.finishPlayback(id: playback.id)
+                        fixture.finishPlayback(id: playback.id)
                     }
                     .id(playback.id)
                 } else if presentation.canReplay {
@@ -45,6 +45,9 @@ struct ASLFixturePanel: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .task(id: fixture.captions.phase) {
+            await fixture.submitAuditSample()
+        }
         .task(id: presentation.ready?.token) {
             guard let ready = presentation.ready, !Task.isCancelled else { return }
             translation.beginPlayback(for: ready.token)
