@@ -11,3 +11,5 @@ The local pose demo also exercises app backgrounding with a completed pose ready
 Use `swift test --package-path Packages/SRayKit` for the controlled-backend integration tests. Run `python3 scripts/apple_ci.py ios` and `python3 scripts/apple_ci.py visionos` for device SDK compilation. Verify microphone permission, real audio capture, offline assets, thermal behavior and assistive technology on physical devices before claiming platform support.
 
 A controlled Swift test also covers a result that arrives after the last window closes. One connected window keeps the original conversation and request alive. Closing the last window clears the caption and cancels that request. A fresh window must start and enable a new conversation, and the previous result cannot show or displace the new request.
+
+The simulator background checks wait for the restart control to accept input after foregrounding. Its accessibility element can become available while the Home Screen return animation is still finishing.

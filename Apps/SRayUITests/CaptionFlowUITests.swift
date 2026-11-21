@@ -252,6 +252,7 @@ final class CaptionFlowUITests: XCTestCase {
                       app.state == .runningBackgroundSuspended)
         app.activate()
         XCTAssertTrue(start.waitForExistence(timeout: 10))
+        XCTAssertTrue(start.wait(for: \.isHittable, toEqual: true, timeout: 10))
         let caption = app.staticTexts["caption.latest"]
         XCTAssertFalse(caption.exists)
         XCTAssertFalse(replay.exists)
@@ -284,7 +285,7 @@ final class CaptionFlowUITests: XCTestCase {
         app.activate()
 
         XCTAssertTrue(start.waitForExistence(timeout: 5))
-        XCTAssertTrue(start.isHittable)
+        XCTAssertTrue(start.wait(for: \.isHittable, toEqual: true, timeout: 10))
         XCTAssertFalse(caption.exists)
         XCTAssertFalse(app.buttons["caption.end"].exists)
     }
