@@ -1,8 +1,8 @@
 # Transmission gate
 
-Issue #11 — dispatch state machine implemented; transport, caption and UI coordination are not yet wired.
+Issues #11 and #13. The gate and first-frame queue share a coordinator. The app still needs verified speech boundaries, transport and renderer wiring.
 
-Create one main-actor `TranslationGate` in the composition root and share it across windows. A conversation starts captions-only with a fresh ID. Explicit enable/resume opens a new translation window; utterance starts must snapshot it as described in [the ledger contract](utterances.md). There is no implicit enable on startup, recovery or completion.
+Share one main-actor `TranslationPipeline` across conversation windows. It owns the `TranslationGate`. A conversation starts captions-only with a fresh ID. Explicit enable/resume opens a new translation window. Snapshot it at each source utterance start as described in [the ledger contract](utterances.md). There is no implicit enable on startup, recovery or completion.
 
 `dispatch(_:start:)` revalidates conversation, original enable window and finalized eligibility synchronously with request creation. The supplied closure must create/start its cancellable transport request immediately on the same actor; do not enqueue the actual send into another task. There is no await between the eligibility check and this callback. Only one request may be in flight, and a sequence watermark prevents duplicate/out-of-order submissions. The gate never stores text or queues rejected requests for replay. #13 owns queue admission and omission reporting.
 
@@ -10,11 +10,17 @@ Pause clears the active window and request identity and sets visible state befor
 
 `complete(_:)` accepts a response exactly once only for the current request and window. A result from before pause, from a prior conversation, or from a duplicate callback cannot release a newer request's capacity or be shown as fresh output. Completion never re-enables translation. The caller must use the returned Boolean before consuming response data.
 
+## Queue and renderer wiring
+
+Pass eligible finals with their finalization instant. Use the same session-relative monotonic clock for renderer and transport events. Reschedule the expiry timer to `nextExpiry` after each event and call `advance(to:)` when it fires. Expiry applies while waiting as text, in flight, or ready for a first frame. Report returned omissions against their caption sequences.
+
+Present a ready clip only after `beginPlayback(for:at:)` accepts its token. Report completion for that same token. Use `playing` to stop showing a clip on pause, failure or interruption. The renderer owns the active clip and any completed replay result. A transport failure closes the enable window and drops queued text. Reopening the window requires an explicit action after connectivity and service policy permit it.
+
 ## Verification
 
 Eight gate test functions cover fourteen scenarios with synchronous main-actor ordering and injected callbacks. Cases include duplicate conversation starts, default-off state, pause before cancellation, prior-window replay, late completions after resume, duplicate completion/submission, excluded captions, foreign conversation callbacks and end/interruption recovery. Moving the visible-state invalidation after cancellation caused a test failure; restoring the ordering passed. Existing ledger and speech suites remain passing.
 
-Run `swift test --package-path Packages/SRayKit`. Hosted CI also compiles the package for iOS and visionOS. The branch is stacked on mrst-10 (PR #48), mrst-9 (PR #47), and mrst-8 (PR #46), while its PR targets develop. Merge prerequisites and update downstream branches in order.
+Run `swift test --package-path Packages/SRayKit`. The coordinator tests exercise the production gate and queue together with a synthetic transport and monotonic event times. Hosted CI also compiles the package for iOS and visionOS.
 
 ## Outstanding integration
 

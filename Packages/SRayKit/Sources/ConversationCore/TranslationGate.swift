@@ -38,7 +38,7 @@ public final class TranslationGate {
     /// The window to snapshot at a source utterance's actual beginning.
     public private(set) var currentWindow: TranslationWindow?
     /// The single submitted request; queueing belongs to the pipeline coordinator.
-    private var inFlight: SubmissionToken?
+    private(set) var activeSubmission: SubmissionToken?
     /// A bounded watermark preventing duplicate or out-of-order submissions.
     private var lastSubmittedSequence: UInt64?
     /// The transport cancellation hook, invoked only after eligibility is invalidated.
@@ -101,11 +101,11 @@ public final class TranslationGate {
         guard state == .enabled, let sessionID, let window = currentWindow,
               utterance.sessionID == sessionID,
               utterance.eligibility == .eligible(windowID: window.id),
-              inFlight == nil,
+              activeSubmission == nil,
               lastSubmittedSequence.map({ utterance.sequence > $0 }) ?? true else { return false }
         let token = SubmissionToken(sessionID: sessionID, windowID: window.id, sequence: utterance.sequence)
         lastSubmittedSequence = utterance.sequence
-        inFlight = token
+        activeSubmission = token
         start(token)
         return true
     }
@@ -114,16 +114,22 @@ public final class TranslationGate {
     /// - Returns: False for stale, cancelled, duplicate or foreign completions.
     @discardableResult
     public func complete(_ token: SubmissionToken) -> Bool {
-        guard state == .enabled, inFlight == token,
+        guard state == .enabled, activeSubmission == token,
               sessionID == token.sessionID, currentWindow?.id == token.windowID else { return false }
-        inFlight = nil
+        activeSubmission = nil
         return true
+    }
+
+    /// Releases and cancels the matching expired submission, leaving the window enabled.
+    func cancel(_ token: SubmissionToken) {
+        guard complete(token) else { return }
+        cancelSubmission(token)
     }
 
     /// Invalidates state synchronously before calling externally supplied cancellation code.
     private func invalidate(nextState: TranslationGateState, endsConversation: Bool) {
-        let cancelled = inFlight
-        inFlight = nil
+        let cancelled = activeSubmission
+        activeSubmission = nil
         currentWindow = nil
         state = nextState
         if endsConversation { sessionID = nil }
