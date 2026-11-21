@@ -5,7 +5,8 @@ import SpeechCore
 /// Events accepted by the caption store for the current conversation.
 package enum CaptionConversationEvent {
     case opened(ContinuousClock.Instant)
-    case finalized(String, source: SpeechSourceTiming?, receivedAt: ContinuousClock.Instant)
+    case finalized(id: UUID, String, source: SpeechSourceTiming?, receivedAt: ContinuousClock.Instant)
+    case retainedCaptions(Set<UUID>)
     case closed(interrupted: Bool)
 }
 
@@ -26,13 +27,14 @@ package struct ConversationTranslationPresentation<Clip: Sendable> {
     package let playing: ActiveTranslation<Clip>?
     package let canReplay: Bool
     package let serviceFailed: Bool
+    package let omissions: [UUID: TranslationOmission.Reason]
 }
 
 /// Connects caption lifecycle events and explicit controls to a conversation-scoped pipeline.
 @MainActor @Observable
 package final class ConversationTranslation<Clip: Sendable> {
     package private(set) var presentation = ConversationTranslationPresentation<Clip>(
-        state: .idle, ready: nil, playing: nil, canReplay: false, serviceFailed: false
+        state: .idle, ready: nil, playing: nil, canReplay: false, serviceFailed: false, omissions: [:]
     )
     @ObservationIgnored private let now: @MainActor () -> ContinuousClock.Instant
     @ObservationIgnored private let startRequest: @MainActor (String) throws -> ConversationTranslationRequest<Clip>
@@ -40,6 +42,8 @@ package final class ConversationTranslation<Clip: Sendable> {
     @ObservationIgnored private var ledger: UtteranceLedger?
     @ObservationIgnored private var sequence: UInt64 = 0
     @ObservationIgnored private var serviceFailed = false
+    @ObservationIgnored private var awaitingCaptionIDs: [UInt64: UUID] = [:]
+    @ObservationIgnored private var omissions: [UUID: TranslationOmission.Reason] = [:]
     @ObservationIgnored private var expiryTask: Task<Void, Never>?
     @ObservationIgnored private var pending: PendingRequest?
     @ObservationIgnored private lazy var pipeline = TranslationPipeline<Clip>(
@@ -70,12 +74,17 @@ package final class ConversationTranslation<Clip: Sendable> {
             ledger = UtteranceLedger(sessionID: id)
             sequence = 0
             serviceFailed = false
-        case .finalized(let text, let source, let receivedAt):
-            acceptFinal(text, source: source, receivedAt: receivedAt)
+        case .finalized(let id, let text, let source, let receivedAt):
+            acceptFinal(id: id, text: text, source: source, receivedAt: receivedAt)
+        case .retainedCaptions(let ids):
+            awaitingCaptionIDs = awaitingCaptionIDs.filter { ids.contains($0.value) }
+            omissions = omissions.filter { ids.contains($0.key) }
         case .closed(let interrupted):
             origin = nil
             ledger = nil
             serviceFailed = false
+            awaitingCaptionIDs.removeAll()
+            omissions.removeAll()
             if interrupted { pipeline.interrupt() } else { pipeline.endConversation() }
         }
         publish()
@@ -88,19 +97,21 @@ package final class ConversationTranslation<Clip: Sendable> {
     }
 
     package func pause() {
-        _ = pipeline.pauseASL()
+        record(pipeline.pauseASL())
         publish()
     }
 
     package func beginPlayback(for token: SubmissionToken) {
         guard let elapsed else { return }
-        _ = pipeline.beginPlayback(for: token, at: elapsed)
+        let attempt = pipeline.beginPlayback(for: token, at: elapsed)
+        record(attempt.omissions)
+        if attempt.started { awaitingCaptionIDs.removeValue(forKey: token.sequence) }
         publish()
     }
 
     package func finishPlayback(id: UUID) {
         guard let elapsed else { return }
-        _ = pipeline.finishPlayback(for: id, at: elapsed)
+        record(pipeline.finishPlayback(for: id, at: elapsed))
         publish()
     }
 
@@ -112,7 +123,9 @@ package final class ConversationTranslation<Clip: Sendable> {
 
     private var elapsed: Duration? { origin.map { $0.duration(to: now()) } }
 
-    private func acceptFinal(_ text: String, source: SpeechSourceTiming?, receivedAt: ContinuousClock.Instant) {
+    private func acceptFinal(
+        id: UUID, text: String, source: SpeechSourceTiming?, receivedAt: ContinuousClock.Instant
+    ) {
         guard let origin, let source, let window = pipeline.currentWindow,
               source.startedAt >= origin, source.endedAt <= receivedAt,
               sequence < UInt64.max else { return }
@@ -123,7 +136,8 @@ package final class ConversationTranslation<Clip: Sendable> {
         sequence += 1
         guard ledger?.begin(sequence: sequence, startedAt: start, window: window) == true,
               let final = ledger?.finalize(sequence: sequence, text: text, endedAt: end, window: window) else { return }
-        _ = pipeline.enqueue(final, finalizedAt: finalizedAt, at: finalizedAt)
+        awaitingCaptionIDs[final.sequence] = id
+        record(pipeline.enqueue(final, finalizedAt: finalizedAt, at: finalizedAt))
     }
 
     private func submit(_ text: String, token: SubmissionToken) {
@@ -157,20 +171,31 @@ package final class ConversationTranslation<Clip: Sendable> {
     private func complete(token: SubmissionToken, clip: Clip?) {
         guard pending?.token == token, let elapsed else { return }
         pending = nil
-        if let clip { _ = pipeline.receive(clip, for: token, at: elapsed) } else { fail(token) }
+        if let clip {
+            record(pipeline.receive(clip, for: token, at: elapsed))
+        } else {
+            fail(token)
+        }
         publish()
     }
 
     private func fail(_ token: SubmissionToken) {
         guard let elapsed else { return }
-        _ = pipeline.requestFailed(for: token, at: elapsed)
+        record(pipeline.requestFailed(for: token, at: elapsed))
         serviceFailed = pipeline.state == .paused
+    }
+
+    private func record(_ outcomes: [TranslationOmission]) {
+        for outcome in outcomes {
+            guard let id = awaitingCaptionIDs.removeValue(forKey: outcome.sequence) else { continue }
+            omissions[id] = outcome.reason
+        }
     }
 
     private func publish() {
         presentation = ConversationTranslationPresentation(
             state: pipeline.state, ready: pipeline.readyForPlayback, playing: pipeline.activePlayback,
-            canReplay: pipeline.canReplay, serviceFailed: serviceFailed
+            canReplay: pipeline.canReplay, serviceFailed: serviceFailed, omissions: omissions
         )
 
         expiryTask?.cancel()
@@ -183,7 +208,7 @@ package final class ConversationTranslation<Clip: Sendable> {
                 return
             }
             guard let self, !Task.isCancelled, self.origin == origin, let elapsed = self.elapsed else { return }
-            _ = self.pipeline.advance(to: elapsed)
+            self.record(self.pipeline.advance(to: elapsed))
             self.publish()
         }
     }

@@ -87,11 +87,11 @@ struct ConversationTranslationTests {
         }
         translation.receive(.opened(instant))
         translation.enable()
-        translation.receive(.finalized("On boundary", source: .init(startedAt: instant, endedAt: instant), receivedAt: instant))
+        translation.receive(.finalized(id: UUID(), "On boundary", source: .init(startedAt: instant, endedAt: instant), receivedAt: instant))
         #expect(requests == 0)
         instant = instant.advanced(by: .seconds(1))
         let startedAt = instant
-        translation.receive(.finalized("Synthetic", source: .init(startedAt: instant, endedAt: instant), receivedAt: instant))
+        translation.receive(.finalized(id: UUID(), "Synthetic", source: .init(startedAt: instant, endedAt: instant), receivedAt: instant))
         var starts = started.stream.makeAsyncIterator()
         await starts.next()
 
@@ -100,7 +100,7 @@ struct ConversationTranslationTests {
         #expect(translation.presentation.state == .paused)
         instant = instant.advanced(by: .seconds(1))
         translation.enable()
-        translation.receive(.finalized("Earlier window", source: .init(startedAt: startedAt, endedAt: instant), receivedAt: instant))
+        translation.receive(.finalized(id: UUID(), "Earlier window", source: .init(startedAt: startedAt, endedAt: instant), receivedAt: instant))
         #expect(requests == 1)
         results.continuation.yield("Old result")
         var completions = finished.stream.makeAsyncIterator()
@@ -109,5 +109,77 @@ struct ConversationTranslationTests {
         #expect(translation.presentation.state == .enabled)
         #expect(translation.presentation.ready == nil)
         translation.receive(.closed(interrupted: false))
+    }
+
+    @Test func omissionsFollowCaptionIdentityAndClearWithCaptionRetention() {
+        let origin = ContinuousClock.now
+        var instant = origin
+        var cancellations = 0
+        let translation = ConversationTranslation<String>(now: { instant }) { _ in
+            ConversationTranslationRequest(result: { "Clip" }, cancel: { cancellations += 1 })
+        }
+        translation.receive(.opened(origin))
+        translation.enable()
+
+        let first = UUID()
+        let second = UUID()
+        let overCapacity = UUID()
+        let next = UUID()
+        submit(first, at: .seconds(1))
+        submit(second, at: .seconds(2))
+        submit(overCapacity, at: .seconds(3))
+        #expect(translation.presentation.omissions == [overCapacity: .capacity])
+
+        submit(next, at: .seconds(12))
+        #expect(cancellations == 1)
+        #expect(translation.presentation.omissions == [first: .expired, second: .expired, overCapacity: .capacity])
+
+        translation.pause()
+        #expect(cancellations == 2)
+        #expect(translation.presentation.omissions[next] == .cancelled)
+        translation.receive(.retainedCaptions([overCapacity, next]))
+        #expect(translation.presentation.omissions == [overCapacity: .capacity, next: .cancelled])
+
+        translation.receive(.closed(interrupted: false))
+        #expect(translation.presentation.omissions.isEmpty)
+
+        func submit(_ id: UUID, at elapsed: Duration) {
+            instant = origin.advanced(by: elapsed)
+            translation.receive(.finalized(
+                id: id, "Sample", source: .init(startedAt: instant, endedAt: instant), receivedAt: instant
+            ))
+        }
+    }
+
+    @Test func startFailureIsAttachedToTheStoredCaptionUntilExpiry() async throws {
+        struct Unavailable: Error {}
+        let origin = ContinuousClock.now
+        var instant = origin
+        let translation = ConversationTranslation<String>(now: { instant }) { _ in throw Unavailable() }
+        let backend = ControlledSpeechBackend()
+        let captions = CaptionSession(backend: backend, now: { instant }, events: translation.receive)
+        var permissions = backend.authorizationRequests.makeAsyncIterator()
+        var starts = backend.recognitionStarts.makeAsyncIterator()
+
+        captions.start()
+        await permissions.next()
+        backend.resolveAuthorization(true)
+        await starts.next()
+        translation.enable()
+        instant = origin.advanced(by: .seconds(1))
+        backend.yield(SpeechEvent(text: "Sample", isFinal: true, sourceTiming: .init(
+            startedAt: instant, endedAt: instant
+        )))
+        backend.finish()
+        await captions.waitForCaptureToFinish()
+
+        let caption = try #require(captions.lines.last)
+        #expect(translation.presentation.state == .paused)
+        #expect(translation.presentation.omissions == [caption.id: .requestFailed])
+
+        instant = origin.advanced(by: CaptionMemory.maximumAge)
+        captions.expireCaptions()
+        #expect(captions.lines.isEmpty)
+        #expect(translation.presentation.omissions.isEmpty)
     }
 }
