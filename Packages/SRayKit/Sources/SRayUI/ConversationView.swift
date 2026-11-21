@@ -119,7 +119,7 @@ public struct ConversationView: View {
             }
             .frame(maxWidth: usesColumns ? 252 : .infinity, alignment: .leading)
 
-            if session.canEnd {
+            if session.canEnd && (scenePhase != .active || showsCaptionTranscript) {
                 Group {
                     if scenePhase == .active {
                         transcript
@@ -177,6 +177,14 @@ public struct ConversationView: View {
         case .oversized:
             Text("Captions stopped because the latest result was too long to display. Try starting them again.")
         }
+    }
+
+    private var showsCaptionTranscript: Bool {
+        #if DEBUG
+        fixture?.showsCaptions ?? true
+        #else
+        true
+        #endif
     }
 
     private var transcript: some View {
@@ -262,7 +270,7 @@ public struct ConversationView: View {
 
     @ViewBuilder
     private func controlButtons(returnToLive: @escaping () -> Void) -> some View {
-        if !session.lines.isEmpty && scenePhase == .active {
+        if !session.lines.isEmpty && scenePhase == .active && showsCaptionTranscript {
             Button("Return to Live", systemImage: "arrow.up", action: returnToLive)
                 .keyboardShortcut("l", modifiers: [.command, .shift])
                 .frame(minHeight: 44)
