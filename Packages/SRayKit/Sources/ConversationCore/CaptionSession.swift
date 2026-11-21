@@ -92,8 +92,16 @@ public final class CaptionSession {
     /// Removes expired captions even when speech has stopped.
     func expireCaptions() {
         guard let origin else { return }
-        lines = memory.snapshot(at: origin.duration(to: now()))
+        updateLines(at: origin.duration(to: now()))
+    }
+
+    private func updateLines(at elapsed: Duration) {
+        let previousFirst = lines.first?.id
+        lines = memory.snapshot(at: elapsed)
         scheduleExpiry()
+        if let events, let previousFirst, previousFirst != lines.first?.id {
+            events(.retainedCaptions(Set(lines.map(\.id))))
+        }
     }
 
     private func receive(_ event: SpeechEvent, id: UUID, startedAt: Duration) {
@@ -101,14 +109,13 @@ public final class CaptionSession {
         let instant = now()
         let elapsed = origin.duration(to: instant)
         let result = memory.update(id: id, text: event.text, isFinal: event.isFinal, startedAt: startedAt, now: elapsed)
-        lines = memory.snapshot(at: elapsed)
-        scheduleExpiry()
-        if result == .stored, event.isFinal {
+        updateLines(at: elapsed)
+        if let events, requestID == id, result == .stored, event.isFinal {
             let timing = event.sourceTiming.flatMap { source in
                 source.startedAt >= origin.advanced(by: startedAt) && source.startedAt <= source.endedAt
                     && source.endedAt <= instant ? source : nil
             }
-            events?(.finalized(event.text, source: timing, receivedAt: instant))
+            events(.finalized(id: id, event.text, source: timing, receivedAt: instant))
         }
         if result == .rejectedOversize {
             stopCapture()
