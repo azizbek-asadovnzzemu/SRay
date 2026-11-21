@@ -17,6 +17,7 @@ struct SRayApp: App {
         switch ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_ASL"] {
         case "1": ASLFixtureConversation()
         case "failure": ASLFixtureConversation(failsFirstRequest: true)
+        case "rate-limited": ASLFixtureConversation(firstRequestRetryDelay: .seconds(10))
         case "over-limit": ASLFixtureConversation(usesOverLimitSample: true)
         case "audit":
             ASLFixtureConversation(onAuditCompletion: {

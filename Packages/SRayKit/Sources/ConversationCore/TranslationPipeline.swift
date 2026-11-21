@@ -131,9 +131,19 @@ public final class TranslationPipeline<Clip: Sendable> {
 
     /// Stops submission after a current request fails. Recovery requires explicit enable.
     public func requestFailed(for token: SubmissionToken, at time: Duration) -> [TranslationOmission] {
+        requestFailed(for: token, at: time, pauseAfterExpiry: false)
+    }
+
+    /// A current rate-limited request closes the window even if its queue slot has just expired.
+    package func requestFailed(
+        for token: SubmissionToken, at time: Duration, pauseAfterExpiry: Bool
+    ) -> [TranslationOmission] {
         guard gate.activeSubmission == token, var omissions = expire(to: time) else { return [] }
-        if gate.complete(token) {
-            if let failed = queue?.failRequest(for: token.sequence) { omissions.append(failed) }
+        let completed = gate.complete(token)
+        if completed, let failed = queue?.failRequest(for: token.sequence) {
+            omissions.append(failed)
+        }
+        if completed || pauseAfterExpiry {
             omissions += pauseASL()
         } else {
             dispatchNext()

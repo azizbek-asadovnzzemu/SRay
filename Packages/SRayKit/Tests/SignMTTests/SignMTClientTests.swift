@@ -77,6 +77,17 @@ struct SignMTClientTests {
         #expect(RetryAfter("invalid") == nil)
     }
 
+    @Test func convertsRateLimitAdviceUsingTheSuppliedWallClock() {
+        let date = Date(timeIntervalSince1970: 784_111_777)
+        let datedLimit = SignMTFailure.rateLimited(retryAfter: .date(date.addingTimeInterval(2.5)))
+
+        #expect(datedLimit.retryDelay(relativeTo: date) == .milliseconds(2_500))
+        #expect(datedLimit.retryDelay(relativeTo: date.addingTimeInterval(3)) == .zero)
+        #expect(SignMTFailure.rateLimited(retryAfter: .delay(.seconds(17))).retryDelay(relativeTo: date) == .seconds(17))
+        #expect(SignMTFailure.rateLimited(retryAfter: nil).retryDelay(relativeTo: date) == nil)
+        #expect(SignMTFailure.unavailable.retryDelay(relativeTo: date) == nil)
+    }
+
     /// Header validation rejects a non-pose response or declared oversize body.
     @Test func validatesMediaTypeAndDeclaredLength() throws {
         // Arrange
