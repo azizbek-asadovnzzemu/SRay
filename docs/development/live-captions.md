@@ -13,3 +13,7 @@ Use `swift test --package-path Packages/SRayKit` for the controlled-backend inte
 A controlled Swift test also covers a result that arrives after the last window closes. One connected window keeps the original conversation and request alive. Closing the last window clears the caption and cancels that request. A fresh window must start and enable a new conversation, and the previous result cannot show or displace the new request.
 
 The simulator background checks wait for the restart control to accept input after foregrounding. Its accessibility element can become available while the Home Screen return animation is still finishing.
+
+After sending the app to the Home Screen, both recovery tests wait for either
+background state before reactivating SRay. The tests then confirm that the
+explicit restart is tappable and that the previous conversation content is gone.
