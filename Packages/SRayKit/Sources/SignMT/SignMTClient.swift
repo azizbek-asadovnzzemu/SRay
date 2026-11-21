@@ -19,10 +19,17 @@ final class SignMTClient: Sendable {
     /// Upper bound on the complete encoded request URL.
     private static let maximumURLBytes = 8_192
 
-    private let session: URLSession
+    private let protocolClass: URLProtocol.Type?
 
-    /// Creates an ephemeral client with no request cache, cookies or stored credentials.
-    init() {
+    /// Uses the platform loader by default. Tests inject a synthetic URL protocol.
+    init(protocolClass: URLProtocol.Type? = nil) {
+        self.protocolClass = protocolClass
+    }
+
+    /// Starts the request synchronously and returns its cancellation handle before any await.
+    /// Call this inside the transmission gate's dispatch closure.
+    func startTranslation(_ text: String) throws(SignMTFailure) -> SignMTSubmission {
+        let request = try Self.makeRequest(text: text)
         let config = URLSessionConfiguration.ephemeral
         config.urlCache = nil
         config.httpCookieStorage = nil
@@ -32,41 +39,28 @@ final class SignMTClient: Sendable {
         config.timeoutIntervalForRequest = Self.timeout
         config.timeoutIntervalForResource = Self.timeout
         config.waitsForConnectivity = false
-        session = URLSession(configuration: config)
+        if let protocolClass { config.protocolClasses = [protocolClass] }
+
+        let (poses, outcome) = AsyncThrowingStream<ReceivedPose, any Error>.makeStream(
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        let delegate = SignMTResponseDelegate(outcome: outcome)
+        let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+        let task = session.dataTask(with: request)
+        let submission = SignMTSubmission(poses: poses) { [weak task] in task?.cancel() }
+        task.resume()
+        session.finishTasksAndInvalidate()
+        return submission
     }
 
-    deinit {
-        session.invalidateAndCancel()
-    }
-
-    /// Sends a single explicitly authorized request, with cancellation and no redirects.
-    /// - Throws: CancellationError or a content-free SignMTFailure.
+    /// Convenience for callers that already own the authorization decision.
     func translate(_ text: String) async throws -> ReceivedPose {
-        let request = try Self.makeRequest(text: text)
-        do {
-            try Task.checkCancellation()
-            let (bytes, response) = try await session.bytes(for: request, delegate: RejectRedirects())
-            defer { bytes.task.cancel() }
-            try Self.validate(response)
-            return try await Self.readPose(from: bytes)
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch let failure as SignMTFailure {
-            throw failure
-        } catch let error as URLError {
-            switch error.code {
-            case .cancelled: throw CancellationError()
-            case .notConnectedToInternet, .networkConnectionLost: throw SignMTFailure.offline
-            case .timedOut: throw SignMTFailure.timedOut
-            default: throw SignMTFailure.unavailable
-            }
-        } catch {
-            throw SignMTFailure.unavailable
-        }
+        try Task.checkCancellation()
+        return try await startTranslation(text).response()
     }
 
     /// Encodes the complete caption without splitting or silently truncating it.
-    static func makeRequest(text: String) throws -> URLRequest {
+    static func makeRequest(text: String) throws(SignMTFailure) -> URLRequest {
         guard text.utf8.prefix(maximumTextBytes + 1).count <= maximumTextBytes else {
             throw SignMTFailure.requestTooLarge
         }
@@ -94,7 +88,7 @@ final class SignMTClient: Sendable {
     }
 
     /// Validates status, content type and any declared length before reading a body.
-    static func validate(_ response: URLResponse) throws {
+    static func validate(_ response: URLResponse) throws(SignMTFailure) {
         guard let http = response as? HTTPURLResponse else { throw SignMTFailure.invalidResponse }
         switch http.statusCode {
         case 200: break
@@ -110,31 +104,6 @@ final class SignMTClient: Sendable {
         }
         guard http.expectedContentLength <= Int64(maximumResponseBytes) else {
             throw SignMTFailure.responseTooLarge
-        }
-    }
-
-    /// Reads at most the given limit even if Content-Length is absent or incorrect.
-    static func readPose<Bytes: AsyncSequence>(
-        from bytes: Bytes, limit: Int = maximumResponseBytes
-    ) async throws -> ReceivedPose where Bytes.Element == UInt8 {
-        var data = Data()
-        for try await byte in bytes {
-            guard data.count < limit else { throw SignMTFailure.responseTooLarge }
-            if data.count.isMultiple(of: 4_096) { try Task.checkCancellation() }
-            data.append(byte)
-        }
-        try Task.checkCancellation()
-        guard !data.isEmpty else { throw SignMTFailure.invalidResponse }
-        return ReceivedPose(bytes: data)
-    }
-
-    /// Prevents the transcript-bearing query from following any server redirect.
-    private final class RejectRedirects: NSObject, URLSessionTaskDelegate {
-        func urlSession(
-            _ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-            newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void
-        ) {
-            completionHandler(nil)
         }
     }
 }
