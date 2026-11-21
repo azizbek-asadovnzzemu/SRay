@@ -58,10 +58,16 @@ def simulator_id(family):
 try:
     if mode in simulator_families:
         family = simulator_families[mode]
-        run(f'{family}: app UI tests', ['xcodebuild', '-project', 'SRay.xcodeproj', '-scheme', 'SRay-iOS',
-            '-destination', f'platform=iOS Simulator,id={simulator_id(family)}',
-            '-derivedDataPath', str(output / 'DerivedData'), '-parallel-testing-enabled', 'NO',
-            '-testLanguage', 'en', '-testRegion', 'US', 'CODE_SIGNING_ALLOWED=NO', 'test'])
+        device = simulator_id(family)
+        boot_status = run(f'{family}: prepare simulator', ['xcrun', 'simctl', 'bootstatus', device, '-b'])
+        if boot_status == 0:
+            test_status = run(f'{family}: app UI tests', ['xcodebuild', '-project', 'SRay.xcodeproj', '-scheme', 'SRay-iOS',
+                '-destination', f'platform=iOS Simulator,id={device}',
+                '-derivedDataPath', str(output / 'DerivedData'), '-parallel-testing-enabled', 'NO',
+                '-testLanguage', 'en', '-testRegion', 'US', 'CODE_SIGNING_ALLOWED=NO', 'test'])
+            if test_status == 0:
+                run(f'{family}: caption artifact audit', [sys.executable, 'scripts/audit_caption_artifacts.py',
+                    device, '--last', '3m', '--launch-fixture'])
     elif mode == 'packages':
         for package in packages:
             path = package.parent

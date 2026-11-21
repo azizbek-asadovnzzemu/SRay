@@ -170,6 +170,7 @@ public struct ConversationView: View {
                     .accessibilityIdentifier("caption.live")
                 if let latest = session.lines.last {
                     captionText(latest)
+                        .accessibilityIdentifier("caption.latest")
                         .id(latest.id)
                 } else if session.phase == .listening {
                     Text("Waiting for speech…").foregroundStyle(.secondary)
