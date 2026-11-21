@@ -150,6 +150,7 @@ package final class ConversationTranslation<Clip: Sendable> {
         sequence += 1
         guard ledger?.begin(sequence: sequence, startedAt: start, window: window) == true,
               let final = ledger?.finalize(sequence: sequence, text: text, endedAt: end, window: window) else { return }
+        guard case .eligible = final.eligibility else { return }
         awaitingCaptions[final.sequence] = AwaitingCaption(id: id, finalizedAt: finalizedAt)
         record(pipeline.enqueue(final, finalizedAt: finalizedAt, at: finalizedAt))
     }
