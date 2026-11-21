@@ -79,7 +79,12 @@ public struct ConversationView: View {
             .toolbar {
                 #if DEBUG
                 if let fixture, scenePhase == .active, fixture.translation.presentation.state == .enabled {
-                    ToolbarItem(placement: .topBarLeading) {
+                    #if os(macOS)
+                    let placement = ToolbarItemPlacement.primaryAction
+                    #else
+                    let placement = ToolbarItemPlacement.topBarLeading
+                    #endif
+                    ToolbarItem(placement: placement) {
                         Button("Pause Demo", systemImage: "pause", action: fixture.translation.pause)
                             .labelStyle(.iconOnly)
                             .accessibilityIdentifier("asl.demo.pause")
