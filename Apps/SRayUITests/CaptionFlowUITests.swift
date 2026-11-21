@@ -122,7 +122,8 @@ final class CaptionFlowUITests: XCTestCase {
         output.tap()
         app.buttons["Pose Only"].tap()
         sample.tap()
-        XCTAssertTrue(app.buttons["asl.demo.replay"].waitForExistence(timeout: 15))
+        let replay = app.buttons["asl.demo.replay"]
+        XCTAssertTrue(replay.waitForExistence(timeout: 15))
 
         let caption = app.staticTexts["caption.latest"]
         XCTAssertFalse(caption.exists)
@@ -130,12 +131,14 @@ final class CaptionFlowUITests: XCTestCase {
         app.buttons["Captions Only"].tap()
         XCTAssertTrue(caption.waitForExistence(timeout: 10))
         XCTAssertEqual(caption.label, "Geometric sample caption.")
+        XCTAssertFalse(replay.exists)
 
         output.tap()
         app.buttons["Captions and Pose"].tap()
         XCTAssertTrue(app.buttons["asl.demo.enable"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons["asl.demo.enable"].label, "Resume Demo")
         XCTAssertTrue(caption.exists)
+        XCTAssertTrue(replay.exists)
     }
 
     /// The same local conversation and its controls survive a rotation at the largest text size.

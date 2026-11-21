@@ -31,14 +31,16 @@ struct ASLFixturePanel: View {
                     .accessibilityIdentifier("asl.demo.sample")
             }
             ASLFixtureOutputPicker(fixture: fixture)
-            if let playback = presentation.playing {
-                PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
-                    translation.finishPlayback(id: playback.id)
+            if fixture.outputMode != .captionsOnly {
+                if let playback = presentation.playing {
+                    PosePlaybackView(presentation: PosePresentation(sequence: playback.translation.clip)) {
+                        translation.finishPlayback(id: playback.id)
+                    }
+                    .id(playback.id)
+                } else if presentation.canReplay {
+                    Button("Replay Sample", systemImage: "arrow.counterclockwise", action: translation.replay)
+                        .accessibilityIdentifier("asl.demo.replay")
                 }
-                .id(playback.id)
-            } else if presentation.canReplay {
-                Button("Replay Sample", systemImage: "arrow.counterclockwise", action: translation.replay)
-                    .accessibilityIdentifier("asl.demo.replay")
             }
         }
         .buttonStyle(.bordered)
