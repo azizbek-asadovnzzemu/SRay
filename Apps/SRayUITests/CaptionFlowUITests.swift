@@ -248,8 +248,7 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertTrue(replay.waitForExistence(timeout: 15))
 
         XCUIDevice.shared.press(.home)
-        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) ||
-                      app.state == .runningBackgroundSuspended)
+        XCTAssertTrue(waitForBackground(app), "SRay should enter the background before reactivation")
         app.activate()
         XCTAssertTrue(start.waitForExistence(timeout: 10))
         XCTAssertTrue(start.wait(for: \.isHittable, toEqual: true, timeout: 10))
@@ -280,13 +279,20 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertTrue(caption.waitForExistence(timeout: 5))
 
         XCUIDevice.shared.press(.home)
-        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) ||
-                      app.state == .runningBackgroundSuspended)
+        XCTAssertTrue(waitForBackground(app), "SRay should enter the background before reactivation")
         app.activate()
 
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         XCTAssertTrue(start.wait(for: \.isHittable, toEqual: true, timeout: 10))
         XCTAssertFalse(caption.exists)
         XCTAssertFalse(app.buttons["caption.end"].exists)
+    }
+
+    private func waitForBackground(_ app: XCUIApplication) -> Bool {
+        let backgrounded = XCTNSPredicateExpectation(predicate: NSPredicate { object, _ in
+            let state = (object as? XCUIApplication)?.state
+            return state == .runningBackground || state == .runningBackgroundSuspended
+        }, object: app)
+        return XCTWaiter.wait(for: [backgrounded], timeout: 10) == .completed
     }
 }
