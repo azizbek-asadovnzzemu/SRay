@@ -38,6 +38,7 @@ struct ConversationTranslationTests {
 
         #expect(translation.evaluation.rendererHandoffs == 2)
         #expect(translation.evaluation.longestHandoff == .seconds(5))
+        #expect(translation.evaluation.rendererHandoffP95UpperBound == .seconds(5))
         #expect(translation.evaluation.omissions.isEmpty)
         translation.receive(.closed(interrupted: false))
         #expect(translation.evaluation == TranslationEvaluationSummary())
