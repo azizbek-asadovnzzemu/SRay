@@ -5,6 +5,11 @@ struct PosePlayhead: Equatable {
     private var heldSeconds: Double = 0
     private var beganAt: Duration?
 
+    /// Creates a local playhead or projects time from an existing shared start.
+    init(startedAt: Duration? = nil) {
+        beganAt = startedAt
+    }
+
     /// Whether elapsed time is accumulating.
     var isPlaying: Bool { beganAt != nil }
 
