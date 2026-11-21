@@ -13,9 +13,16 @@ public final class ASLFixtureConversation {
     /// The selected output preference shared by the demo windows.
     private(set) var outputMode: ASLFixtureOutputMode = .captionsOnly
     private let speech: ASLFixtureSpeech
+    private let onAuditCompletion: (@MainActor () -> Void)?
+
+    /// Whether this Debug fixture was launched to run the standalone privacy audit.
+    public var isRunningAudit: Bool { onAuditCompletion != nil }
 
     /// Creates a demo with a locally generated geometric pose.
-    public init?(failsFirstRequest: Bool = false) {
+    public init?(
+        failsFirstRequest: Bool = false,
+        onAuditCompletion: (@MainActor () -> Void)? = nil
+    ) {
         guard let clip = try? PoseDecoder.decode(SyntheticPoseFixture.encoded()) else { return nil }
         let speech = ASLFixtureSpeech()
         var shouldFail = failsFirstRequest
@@ -27,6 +34,7 @@ public final class ASLFixtureConversation {
             return ConversationTranslationRequest(result: { clip }, cancel: {})
         }
         self.speech = speech
+        self.onAuditCompletion = onAuditCompletion
         self.translation = translation
         captions = CaptionSession(backend: speech, now: { .now }, events: translation.receive)
     }
@@ -52,6 +60,28 @@ public final class ASLFixtureConversation {
 
     func showSampleCaption() {
         speech.showSampleCaption()
+    }
+
+    /// Runs one sample only when the explicitly selected audit has started listening.
+    func submitAuditSample() async {
+        guard isRunningAudit, captions.phase == .listening else { return }
+        enableDemo()
+        do {
+            try await Task.sleep(for: .milliseconds(1))
+        } catch {
+            return
+        }
+        guard captions.phase == .listening else { return }
+        showSampleCaption()
+    }
+
+    /// Ends the audit after the result has been rendered and reached the replay slot.
+    func finishPlayback(id: UUID) {
+        translation.finishPlayback(id: id)
+        if let onAuditCompletion, translation.presentation.canReplay {
+            captions.end()
+            onAuditCompletion()
+        }
     }
 }
 
