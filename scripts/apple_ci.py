@@ -1,11 +1,9 @@
 """Run unsigned Apple builds, simulator app tests and Swift package tests."""
 import json
-from math import ceil
 import os
 from pathlib import Path
 import subprocess
 import sys
-from time import monotonic
 
 root = Path(__file__).resolve().parents[1]
 mode = sys.argv[1]
@@ -63,15 +61,13 @@ try:
         device = simulator_id(family)
         boot_status = run(f'{family}: prepare simulator', ['xcrun', 'simctl', 'bootstatus', device, '-b'])
         if boot_status == 0:
-            started = monotonic()
             test_status = run(f'{family}: app UI tests', ['xcodebuild', '-project', 'SRay.xcodeproj', '-scheme', 'SRay-iOS',
                 '-destination', f'platform=iOS Simulator,id={device}',
                 '-derivedDataPath', str(output / 'DerivedData'), '-parallel-testing-enabled', 'NO',
                 '-testLanguage', 'en', '-testRegion', 'US', 'CODE_SIGNING_ALLOWED=NO', 'test'])
             if test_status == 0:
-                elapsed_minutes = ceil((monotonic() - started + 3) / 60)
                 run(f'{family}: caption artifact audit', [sys.executable, 'scripts/audit_caption_artifacts.py',
-                    device, '--last', f'{elapsed_minutes}m'])
+                    device, '--last', '3m', '--launch-fixture'])
     elif mode == 'packages':
         for package in packages:
             path = package.parent

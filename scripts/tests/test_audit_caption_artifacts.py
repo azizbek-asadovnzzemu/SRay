@@ -7,7 +7,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from audit_caption_artifacts import CAPTION, CHUNK_BYTES, contains_caption, main, scan_container, scan_log_events
+from audit_caption_artifacts import (BUNDLE_ID, CAPTION, CHUNK_BYTES, READY_MESSAGE, contains_caption,
+                                     main, scan_container, scan_log_events)
 
 
 class CaptionArtifactAuditTests(unittest.TestCase):
@@ -78,3 +79,29 @@ class CaptionArtifactAuditTests(unittest.TestCase):
                  redirect_stderr(error):
                 self.assertEqual(main(), 2)
             self.assertIn('could not export simulator process logs', error.getvalue())
+
+    def test_standalone_launch_filters_by_pid_requires_readiness_and_stops(self):
+        for ready in (True, False):
+            with self.subTest(ready=ready), tempfile.TemporaryDirectory() as directory:
+                calls = []
+
+                def run(command, **kwargs):
+                    calls.append(command)
+                    if 'launch' in command:
+                        self.assertEqual(kwargs['env']['SIMCTL_CHILD_SRAY_SYNTHETIC_CAPTIONS'], '1')
+                        self.assertEqual(kwargs['env']['SIMCTL_CHILD_SRAY_CAPTION_AUDIT'], '1')
+                        return subprocess.CompletedProcess(command, 0, stdout=BUNDLE_ID + ': 42')
+                    if 'get_app_container' in command:
+                        return subprocess.CompletedProcess(command, 0, stdout=directory)
+                    if 'spawn' in command:
+                        self.assertEqual(command[-2:], ['--process', '42'])
+                        if ready:
+                            record = {'subsystem': BUNDLE_ID + '.audit', 'eventMessage': READY_MESSAGE}
+                            kwargs['stdout'].write(json.dumps(record).encode())
+                    return subprocess.CompletedProcess(command, 0)
+
+                argv = ['audit', 'fixture', '--last', '2m', '--launch-fixture']
+                with patch('sys.argv', argv), patch('audit_caption_artifacts.subprocess.run', side_effect=run), \
+                     redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    self.assertEqual(main(), 0 if ready else 2)
+                self.assertIn('terminate', calls[-1])

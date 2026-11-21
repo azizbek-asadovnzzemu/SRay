@@ -13,6 +13,8 @@ CAPTION = 'Take the elevator to the second floor.'
 SIGNATURES = tuple(CAPTION.encode(encoding) for encoding in ('utf-8', 'utf-16-le', 'utf-16-be'))
 CHUNK_BYTES = 64 * 1024
 OVERLAP_BYTES = max(map(len, SIGNATURES)) - 1
+BUNDLE_ID = 'com.azizbekasadov.sray'
+READY_MESSAGE = 'Synthetic caption audit ready'
 
 
 def contains_caption(stream):
@@ -70,41 +72,112 @@ def scan_log_events(logs):
     return origins
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('simulator', help='Simulator UDID used only for the synthetic SRay UI suite')
-    parser.add_argument('--last', required=True, help='Relative log collection window, for example 2m')
-    arguments = parser.parse_args()
+def launch_fixture(simulator):
+    """Launch the installed Debug app outside of XCTest and return its process ID."""
+    launched = subprocess.run([
+        'xcrun', 'simctl', 'launch', '--terminate-running-process', simulator, BUNDLE_ID,
+    ], env={**os.environ, 'SIMCTL_CHILD_SRAY_SYNTHETIC_CAPTIONS': '1', 'SIMCTL_CHILD_SRAY_CAPTION_AUDIT': '1'},
+        check=True, capture_output=True, text=True, timeout=45)
+    prefix, separator, pid = launched.stdout.strip().rpartition(':')
+    if prefix != BUNDLE_ID or not separator or not pid.strip().isdecimal():
+        raise OSError('Missing fixture process identity')
+    return pid.strip()
+
+
+def fixture_ready(logs):
+    """Require a content-free readiness record from the Debug fixture."""
+    for line in logs:
+        if READY_MESSAGE.encode() not in line:
+            continue
+        try:
+            record = json.loads(line)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        if (isinstance(record, dict) and record.get('eventMessage') == READY_MESSAGE
+                and record.get('subsystem') == BUNDLE_ID + '.audit'):
+            return True
+    return False
+
+
+def collect_origins(simulator, window, pid):
+    """Read the selected process logs and require the fixture to run when launched here."""
+    command = ['xcrun', 'simctl', 'spawn', simulator, 'log', 'show', '--last', window,
+               '--info', '--debug', '--style', 'ndjson']
+    if pid is None:
+        command += ['--predicate', 'process == "SRay"']
+    else:
+        command += ['--process', pid]
+
+    for _ in range(3 if pid is not None else 1):
+        with tempfile.TemporaryFile() as logs:
+            subprocess.run(command, check=True, stdout=logs, stderr=subprocess.DEVNULL, timeout=60)
+            logs.seek(0)
+            if pid is None or fixture_ready(logs):
+                logs.seek(0)
+                return scan_log_events(logs)
+    raise OSError('Synthetic caption fixture never reported readiness')
+
+
+def audit(simulator, window, pid):
     try:
         container = subprocess.run(
-            ['xcrun', 'simctl', 'get_app_container', arguments.simulator, 'com.azizbekasadov.sray', 'data'],
+            ['xcrun', 'simctl', 'get_app_container', simulator, BUNDLE_ID, 'data'],
             check=True, capture_output=True, text=True, timeout=30,
         )
         root = container.stdout.strip()
         if not root:
             raise OSError('Missing app data container')
-        files, matches = scan_container(Path(root))
     except (OSError, subprocess.SubprocessError):
         print('Caption audit could not read the app data container.', file=sys.stderr)
         return 2
 
     try:
-        with tempfile.TemporaryFile() as logs:
-            subprocess.run([
-                'xcrun', 'simctl', 'spawn', arguments.simulator, 'log', 'show', '--last', arguments.last,
-                '--info', '--debug', '--style', 'ndjson', '--predicate', 'process == "SRay"',
-            ], check=True, stdout=logs, stderr=subprocess.DEVNULL, timeout=60)
-            logs.seek(0)
-            origins = scan_log_events(logs)
+        origins = collect_origins(simulator, window, pid)
     except (OSError, subprocess.SubprocessError):
         print('Caption audit could not export simulator process logs.', file=sys.stderr)
+        return 2
+
+    try:
+        files, matches = scan_container(Path(root))
+    except OSError:
+        print('Caption audit could not read the app data container.', file=sys.stderr)
         return 2
 
     print(f'Scanned {files} app data files. Sentinel matches in app files: {matches}.')
     print('Sentinel in app process logs: ' + ('found' if origins else 'none found') + '.')
     for subsystem, category in sorted(origins):
         print(f'Matching log origin: {subsystem} / {category}.')
+    if pid is not None:
+        print('Verified readiness of the standalone synthetic fixture.')
     return int(matches > 0 or bool(origins))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('simulator', help='Simulator UDID used only for the synthetic SRay suite')
+    parser.add_argument('--last', required=True, help='Relative log collection window, for example 2m')
+    parser.add_argument('--launch-fixture', action='store_true', help='Audit a fresh Debug process outside XCTest')
+    arguments = parser.parse_args()
+
+    if not arguments.launch_fixture:
+        return audit(arguments.simulator, arguments.last, None)
+    try:
+        pid = launch_fixture(arguments.simulator)
+    except (OSError, subprocess.SubprocessError):
+        print('Caption audit could not start the standalone fixture.', file=sys.stderr)
+        return 2
+    try:
+        outcome = audit(arguments.simulator, arguments.last, pid)
+    finally:
+        try:
+            stopped = subprocess.run(['xcrun', 'simctl', 'terminate', arguments.simulator, BUNDLE_ID],
+                                     check=True, capture_output=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            stopped = None
+    if stopped is None:
+        print('Caption audit could not stop the standalone fixture.', file=sys.stderr)
+        return 2
+    return outcome
 
 
 if __name__ == '__main__':
