@@ -7,13 +7,18 @@ struct ASLFixtureOutputPicker: View {
 
     var body: some View {
         Menu {
-            Picker("Conversation Output", selection: Binding(
-                get: { fixture.outputMode },
-                set: fixture.selectOutput
-            )) {
-                ForEach(ASLFixtureOutputMode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode)
+            ForEach(ASLFixtureOutputMode.allCases, id: \.self) { mode in
+                let selected = fixture.outputMode == mode
+                Button {
+                    fixture.selectOutput(mode)
+                } label: {
+                    if selected {
+                        Label(mode.title, systemImage: "checkmark")
+                    } else {
+                        Text(mode.title)
+                    }
                 }
+                .accessibilityAddTraits(selected ? .isSelected : [])
             }
         } label: {
             Label("Conversation Output", systemImage: "rectangle.split.2x1")
