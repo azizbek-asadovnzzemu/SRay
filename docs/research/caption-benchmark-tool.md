@@ -27,4 +27,6 @@ Use the same monotonic origin for the end of each spoken word and the appearance
 
 The word error rate is the total number of substitutions, deletions and insertions divided by the total reference word count. It can exceed one. The nearest-rank p95 uses all word observations, with missing partials ranked after finite delays. The displayed-only p95 is reported separately. A percentile that cannot be computed or falls in the missing tail is absent from the JSON, with missing counts still reported.
 
+Supply optional `coldStarts` observations with `startActionMilliseconds` and `firstVisibleCaptionMilliseconds`. Measure both timestamps from the same monotonic origin per attempt. Set the second value to null when no caption appears. Report the cold-start results separately from word-aligned results. The `coldStart` aggregate counts attempts and missing captions, with missing results ranked after finite delays in its all-attempt p95. A displayed-only p95 is also reported.
+
 The tool reads at most 8 MiB, accepts at most 512 tokens per utterance side, and limits total alignment work. Standard output contains aggregate counts and optional statistics, with no input text or per-word timing. Preserve the approved conditions and device evidence separately. Compare against release thresholds only after the protocol is frozen.
