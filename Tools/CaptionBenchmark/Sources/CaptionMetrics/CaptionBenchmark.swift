@@ -15,12 +15,36 @@ public struct CaptionBenchmarkInput: Decodable, Sendable {
         public let firstVisiblePartialMilliseconds: Int?
     }
 
+    /// One cold-start attempt measured on its own monotonic clock.
+    public struct ColdStartObservation: Decodable, Sendable {
+        public let startActionMilliseconds: Int
+        /// Nil when the attempt never produced a visible caption.
+        public let firstVisibleCaptionMilliseconds: Int?
+    }
+
     public let utterances: [Utterance]
     public let wordObservations: [WordObservation]
+    public let coldStarts: [ColdStartObservation]?
+
+    init(utterances: [Utterance], wordObservations: [WordObservation], coldStarts: [ColdStartObservation]? = nil) {
+        self.utterances = utterances
+        self.wordObservations = wordObservations
+        self.coldStarts = coldStarts
+    }
 }
 
 /// Aggregate results with no transcript text, utterance IDs, or individual timestamps.
 public struct CaptionBenchmarkReport: Encodable, Equatable, Sendable {
+    /// Cold-start timing scored separately from word-aligned partial latency.
+    public struct ColdStart: Encodable, Equatable, Sendable {
+        public let attempts: Int
+        public let missingCaptions: Int
+        /// Nil if the required rank was a missing caption or the batch was empty.
+        public let allAttemptP95Milliseconds: Int?
+        /// P95 conditioned on the appearance of a caption.
+        public let displayedCaptionP95Milliseconds: Int?
+    }
+
     public let referenceWords: Int
     public let substitutions: Int
     public let deletions: Int
@@ -35,6 +59,8 @@ public struct CaptionBenchmarkReport: Encodable, Equatable, Sendable {
     public let allWordP95Milliseconds: Int?
     /// A separate percentile conditioned on a correct partial appearing.
     public let displayedWordP95Milliseconds: Int?
+    /// Separate aggregate when cold-start observations were supplied.
+    public let coldStart: ColdStart?
 }
 
 /// Content-free failures for invalid or oversized benchmark inputs.
@@ -92,7 +118,29 @@ public enum CaptionBenchmark {
             wordErrorRate: words == 0 ? nil : Double(total.count) / Double(words),
             observedWords: observed, missingPartials: observed - delays.count,
             allWordP95Milliseconds: p95(delays, sampleCount: observed),
-            displayedWordP95Milliseconds: p95(delays, sampleCount: delays.count)
+            displayedWordP95Milliseconds: p95(delays, sampleCount: delays.count),
+            coldStart: try input.coldStarts.map(scoreColdStarts)
+        )
+    }
+
+    private static func scoreColdStarts(
+        _ observations: [CaptionBenchmarkInput.ColdStartObservation]
+    ) throws -> CaptionBenchmarkReport.ColdStart {
+        guard observations.count <= 10_000 else { throw CaptionBenchmarkError.exceedsBudget }
+        var delays: [Int] = []
+        for observation in observations {
+            let start = observation.startActionMilliseconds
+            guard start >= 0 else { throw CaptionBenchmarkError.invalidTiming }
+            guard let visible = observation.firstVisibleCaptionMilliseconds else { continue }
+            guard visible >= start else { throw CaptionBenchmarkError.invalidTiming }
+            delays.append(visible - start)
+        }
+        delays.sort()
+        return CaptionBenchmarkReport.ColdStart(
+            attempts: observations.count,
+            missingCaptions: observations.count - delays.count,
+            allAttemptP95Milliseconds: p95(delays, sampleCount: observations.count),
+            displayedCaptionP95Milliseconds: p95(delays, sampleCount: delays.count)
         )
     }
 
