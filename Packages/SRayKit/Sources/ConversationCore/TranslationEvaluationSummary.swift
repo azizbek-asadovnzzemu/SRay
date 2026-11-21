@@ -7,14 +7,27 @@ package struct TranslationEvaluationSummary: Equatable, Sendable {
     /// Nearest-rank p95 across successful handoffs, rounded up to the next 100 ms bound.
     /// Returns nil until a handoff succeeds. Omitted work is counted separately.
     package var rendererHandoffP95UpperBound: Duration? {
-        guard rendererHandoffs > 0 else { return nil }
-        let rank = rendererHandoffs - rendererHandoffs / 20
-        var cumulative = 0
-        for bound in handoffBounds.keys.sorted() {
-            cumulative += handoffBounds[bound, default: 0]
-            if cumulative >= rank { return .milliseconds(bound * Self.bucketMilliseconds) }
+        handoffP95UpperBound(sampleCount: rendererHandoffs)
+    }
+
+    /// Denominator for completed handoffs and pre-playback omissions.
+    /// Work still awaiting a result is measured once it resolves.
+    package var resolvedEligibleUtterances: Int {
+        rendererHandoffs + omissions.values.reduce(0, +)
+    }
+
+    /// P95 for resolved eligible work, with omissions ranked after all timed handoffs.
+    /// Nil for an empty denominator or when the required rank is an omission.
+    package var resolvedHandoffP95UpperBound: Duration? {
+        handoffP95UpperBound(sampleCount: resolvedEligibleUtterances)
+    }
+
+    /// Numerator for resolved eligible utterances handed off within the five-second target.
+    package var handoffsWithinFiveSeconds: Int {
+        let targetBound = 5_000 / Self.bucketMilliseconds
+        return handoffBounds.reduce(into: 0) { count, entry in
+            if entry.key <= targetBound { count += entry.value }
         }
-        return nil
     }
 
     /// Counts of outcomes that were dropped before playback.
@@ -23,6 +36,17 @@ package struct TranslationEvaluationSummary: Equatable, Sendable {
     private static let bucketMilliseconds: Int64 = 100
     // The pipeline expires work after ten seconds, so at most 101 bounds can occur.
     private var handoffBounds: [Int64: Int] = [:]
+
+    private func handoffP95UpperBound(sampleCount: Int) -> Duration? {
+        let rank = sampleCount - sampleCount / 20
+        guard rank > 0, rank <= rendererHandoffs else { return nil }
+        var cumulative = 0
+        for bound in handoffBounds.keys.sorted() {
+            cumulative += handoffBounds[bound, default: 0]
+            if cumulative >= rank { return .milliseconds(bound * Self.bucketMilliseconds) }
+        }
+        return nil
+    }
 
     /// Records a successful live handoff. Replay is independent of translation.
     mutating func recordHandoff(after latency: Duration) {
