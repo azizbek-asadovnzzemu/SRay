@@ -73,6 +73,41 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertFalse(app.buttons["asl.demo.replay"].exists)
     }
 
+    /// A temporary rate limit leaves captions visible and never resumes the demo on its own.
+    func testRateLimitLeavesCaptionsAvailableUntilExplicitResume() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "rate-limited"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.wait(for: \.isHittable, toEqual: true, timeout: 10))
+        start.tap()
+        let sample = app.buttons["asl.demo.sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        let enable = app.buttons["asl.demo.enable"]
+        enable.tap()
+        sample.tap()
+
+        let status = app.staticTexts["asl.demo.status"]
+        let caption = app.staticTexts["caption.latest"]
+        XCTAssertTrue(status.wait(
+            for: \.label, toEqual: "Demo temporarily unavailable. Captions can continue.", timeout: 5
+        ))
+        XCTAssertTrue(caption.exists)
+        XCTAssertFalse(enable.isEnabled)
+
+        XCTAssertTrue(enable.wait(for: \.isEnabled, toEqual: true, timeout: 15))
+        XCTAssertEqual(enable.label, "Resume Demo")
+        XCTAssertFalse(app.buttons["asl.demo.pause"].exists)
+        XCTAssertFalse(app.buttons["asl.demo.replay"].exists)
+        XCTAssertTrue(caption.exists)
+
+        enable.tap()
+        XCTAssertTrue(status.wait(for: \.label, toEqual: "Demo active", timeout: 5))
+    }
+
     /// Viewing the disclosure preserves the existing conversation and its captions.
     func testASLPrivacyDetailsReturnToTheActiveConversation() {
         continueAfterFailure = false

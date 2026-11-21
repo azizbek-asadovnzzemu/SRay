@@ -30,4 +30,18 @@ swift test --package-path Packages/SRayKit --filter CaptionSessionTests
 
 The drill requires captions to stay active during the outage and verifies that the final local caption is still readable. It checks that the pending request and queue are omitted, late output is rejected, and a new request requires an explicit resume and fresh speech. The other suites check typed provider responses, queue bounds and transcript cleanup independently.
 
+A rate-limit response with a usable Retry-After keeps translation paused for the
+provider's delay. The deadline uses a monotonic clock and survives ending and
+starting another conversation in the same app process. It holds no conversation
+content and never reopens the gate. After the delay, the user must explicitly enable
+ASL, and only wholly new utterances qualify. On a Debug build, set
+`SRAY_SYNTHETIC_ASL=rate-limited`, start captions, enable the demo and show the
+sample caption. Resume stays disabled for ten seconds while captions remain
+available. Once Resume is available, check that playback stays idle until a new
+caption arrives after explicit resume.
+
+`swift test --package-path Packages/SRayKit --filter ConversationRateLimitTests`
+exercises the deadline and checks that an expiring rate-limited request cannot
+start queued work.
+
 Repeat the exercise on devices after the service and renderer are connected to the app. Record actionable status feedback, continuous captions, late-result rejection and explicit resume. Verify the Retry-After policy with a rate-limit fixture and record whether the first fresh utterance plays within its latency budget.

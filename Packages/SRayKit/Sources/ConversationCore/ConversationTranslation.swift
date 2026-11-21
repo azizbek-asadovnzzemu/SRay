@@ -34,6 +34,8 @@ package struct ConversationTranslationPresentation<Clip: Sendable> {
     package let playbackStartedAt: ContinuousClock.Instant?
     package let canReplay: Bool
     package let serviceFailed: Bool
+    /// Whether the provider's cooldown currently prevents a user-initiated enable.
+    package let isWaitingForRetry: Bool
     package let omissions: [UUID: TranslationOmission.Reason]
     package let captionLimits: [UUID: CaptionTranslationLimit]
 }
@@ -42,7 +44,8 @@ package struct ConversationTranslationPresentation<Clip: Sendable> {
 @MainActor @Observable
 package final class ConversationTranslation<Clip: Sendable> {
     package private(set) var presentation = ConversationTranslationPresentation<Clip>(
-        state: .idle, ready: nil, playing: nil, playbackStartedAt: nil, canReplay: false, serviceFailed: false, omissions: [:], captionLimits: [:]
+        state: .idle, ready: nil, playing: nil, playbackStartedAt: nil, canReplay: false, serviceFailed: false,
+        isWaitingForRetry: false, omissions: [:], captionLimits: [:]
     )
     /// Aggregates the outcomes of the active conversation in memory.
     @ObservationIgnored package private(set) var evaluation = TranslationEvaluationSummary()
@@ -53,6 +56,7 @@ package final class ConversationTranslation<Clip: Sendable> {
     @ObservationIgnored private var ledger: UtteranceLedger?
     @ObservationIgnored private var sequence: UInt64 = 0
     @ObservationIgnored private var serviceFailed = false
+    @ObservationIgnored private var retryCooldown: RetryCooldown?
     @ObservationIgnored private var awaitingCaptions: [UInt64: AwaitingCaption] = [:]
     @ObservationIgnored private var omissions: [UUID: TranslationOmission.Reason] = [:]
     @ObservationIgnored private var captionLimits: [UUID: CaptionTranslationLimit] = [:]
@@ -62,6 +66,11 @@ package final class ConversationTranslation<Clip: Sendable> {
         startSubmission: { [weak self] text, token in self?.submit(text, token: token) },
         cancelSubmission: { [weak self] token in self?.cancel(token) }
     )
+
+    private struct RetryCooldown {
+        let receivedAt: ContinuousClock.Instant
+        let delay: Duration
+    }
 
     private struct AwaitingCaption {
         let id: UUID?
@@ -121,7 +130,9 @@ package final class ConversationTranslation<Clip: Sendable> {
     }
 
     package func enable() {
-        guard let elapsed, pipeline.enableASL(at: elapsed) else { return }
+        let instant = now()
+        guard let origin, remainingRetryDelay(at: instant) == nil,
+              pipeline.enableASL(at: origin.duration(to: instant)) else { return }
         serviceFailed = false
         publish()
     }
@@ -198,14 +209,14 @@ package final class ConversationTranslation<Clip: Sendable> {
             let observer = Task { [weak self] in
                 do {
                     let clip = try await operation.result()
-                    self?.complete(token: token, clip: clip)
+                    self?.complete(token: token, result: .success(clip))
                 } catch {
-                    self?.complete(token: token, clip: nil)
+                    self?.complete(token: token, result: .failure(error))
                 }
             }
             pending = PendingRequest(token: token, operation: operation, observer: observer)
         } catch {
-            fail(token)
+            fail(error, for: token)
         }
     }
 
@@ -216,21 +227,35 @@ package final class ConversationTranslation<Clip: Sendable> {
         request.observer.cancel()
     }
 
-    private func complete(token: SubmissionToken, clip: Clip?) {
+    private func complete(token: SubmissionToken, result: Result<Clip, any Error>) {
         guard pending?.token == token, let elapsed else { return }
         pending = nil
-        if let clip {
+        switch result {
+        case .success(let clip):
             record(pipeline.receive(clip, for: token, at: elapsed))
-        } else {
-            fail(token)
+        case .failure(let error):
+            fail(error, for: token)
         }
         publish()
     }
 
-    private func fail(_ token: SubmissionToken) {
-        guard let elapsed else { return }
-        record(pipeline.requestFailed(for: token, at: elapsed))
+    private func fail(_ error: any Error, for token: SubmissionToken) {
+        guard let origin else { return }
+        let instant = now()
+        let retryDelay = (error as? any TranslationRetryAdvising)?.retryDelay(relativeTo: .now) ?? .zero
+        record(pipeline.requestFailed(
+            for: token, at: origin.duration(to: instant), pauseAfterExpiry: retryDelay > .zero
+        ))
         serviceFailed = pipeline.state == .paused
+        if serviceFailed, retryDelay > .zero {
+            retryCooldown = RetryCooldown(receivedAt: instant, delay: retryDelay)
+        }
+    }
+
+    private func remainingRetryDelay(at time: ContinuousClock.Instant) -> Duration? {
+        guard let retryCooldown else { return nil }
+        let elapsed = max(.zero, retryCooldown.receivedAt.duration(to: time))
+        return elapsed < retryCooldown.delay ? retryCooldown.delay - elapsed : nil
     }
 
     private func record(_ outcomes: [TranslationOmission]) {
@@ -244,18 +269,26 @@ package final class ConversationTranslation<Clip: Sendable> {
     private func publish() {
         let playing = pipeline.activePlayback
         if playbackClock?.id != playing?.id { playbackClock = nil }
+        let instant = now()
+        let retryDelay = remainingRetryDelay(at: instant)
+        if retryDelay == nil { retryCooldown = nil }
         presentation = ConversationTranslationPresentation(
             state: pipeline.state, ready: pipeline.readyForPlayback, playing: playing,
             playbackStartedAt: playbackClock?.startedAt,
-            canReplay: pipeline.canReplay, serviceFailed: serviceFailed, omissions: omissions, captionLimits: captionLimits
+            canReplay: pipeline.canReplay, serviceFailed: serviceFailed, isWaitingForRetry: retryDelay != nil,
+            omissions: omissions, captionLimits: captionLimits
         )
 
         expiryTask?.cancel()
         expiryTask = nil
-        guard let origin, let deadline = pipeline.nextExpiry else { return }
+        guard let origin else { return }
+        let queueDeadline = pipeline.nextExpiry.map { origin.advanced(by: $0) }
+        // Large server delays use bounded wakeups rather than one unbounded clock sleep.
+        let retryWake = retryDelay.map { instant.advanced(by: min($0, .seconds(3_600))) }
+        guard let deadline = [queueDeadline, retryWake].compactMap({ $0 }).min() else { return }
         expiryTask = Task { [weak self] in
             do {
-                try await ContinuousClock().sleep(until: origin.advanced(by: deadline))
+                try await ContinuousClock().sleep(until: deadline)
             } catch {
                 return
             }

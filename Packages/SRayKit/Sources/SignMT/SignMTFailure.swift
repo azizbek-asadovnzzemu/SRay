@@ -1,8 +1,9 @@
+import ConversationCore
 import Foundation
 import PoseCore
 
 /// Content-free outcomes for the observed Sign MT transport contract.
-enum SignMTFailure: Error, Equatable, Sendable {
+enum SignMTFailure: TranslationRetryAdvising, Equatable, Sendable {
     case invalidText
     case requestTooLarge
     case offline
@@ -15,6 +16,15 @@ enum SignMTFailure: Error, Equatable, Sendable {
     case invalidResponse
     case invalidPose(PoseDecodingError)
     case responseTooLarge
+
+    /// Converts a rate-limit response to a delay before the conversation uses its monotonic clock.
+    func retryDelay(relativeTo date: Date) -> Duration? {
+        guard case let .rateLimited(retryAfter?) = self else { return nil }
+        switch retryAfter {
+        case .delay(let delay): return delay
+        case .date(let deadline): return .seconds(max(0, deadline.timeIntervalSince(date)))
+        }
+    }
 }
 
 /// A provider's retry deadline. The app must still require explicit recovery.

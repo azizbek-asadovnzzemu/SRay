@@ -15,7 +15,11 @@ struct ASLFixturePanel: View {
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            status(for: presentation.state, failed: presentation.serviceFailed)
+            status(
+                for: presentation.state,
+                failed: presentation.serviceFailed,
+                waitingForRetry: presentation.isWaitingForRetry
+            )
                 .accessibilityIdentifier("asl.demo.status")
 
             if presentation.state == .enabled {
@@ -24,6 +28,7 @@ struct ASLFixturePanel: View {
             } else {
                 Button(presentation.state == .paused ? "Resume Demo" : "Enable Demo",
                        systemImage: "play", action: fixture.enableDemo)
+                    .disabled(presentation.isWaitingForRetry)
                     .accessibilityIdentifier("asl.demo.enable")
             }
             if fixture.captions.phase == .listening {
@@ -59,8 +64,10 @@ struct ASLFixturePanel: View {
     }
 
     @ViewBuilder
-    private func status(for state: TranslationGateState, failed: Bool) -> some View {
-        if failed {
+    private func status(for state: TranslationGateState, failed: Bool, waitingForRetry: Bool) -> some View {
+        if waitingForRetry {
+            Label("Demo temporarily unavailable. Captions can continue.", systemImage: "clock")
+        } else if failed {
             Label("Demo unavailable. Resume to try again.", systemImage: "exclamationmark.triangle")
         } else {
             switch state {

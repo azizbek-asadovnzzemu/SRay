@@ -17,7 +17,7 @@ let package = Package(
         .target(name: "PosePlayback", dependencies: ["PoseCore"]),
         .testTarget(name: "PosePlaybackTests", dependencies: ["PoseCore", "PosePlayback"]),
         .testTarget(name: "PoseCoreTests", dependencies: ["PoseCore"]),
-        .target(name: "SignMT", dependencies: ["PoseCore"]),
+        .target(name: "SignMT", dependencies: ["ConversationCore", "PoseCore"]),
         .testTarget(name: "SignMTTests", dependencies: ["PoseCore", "SignMT"]),
         .target(name: "ConversationCore", dependencies: ["SpeechCore"]),
         .testTarget(name: "ConversationCoreTests", dependencies: ["ConversationCore", "SpeechCore"]),

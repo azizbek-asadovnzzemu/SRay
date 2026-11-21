@@ -22,6 +22,7 @@ public final class ASLFixtureConversation {
     public init?(
         failsFirstRequest: Bool = false,
         usesOverLimitSample: Bool = false,
+        firstRequestRetryDelay: Duration? = nil,
         onAuditCompletion: (@MainActor () -> Void)? = nil
     ) {
         guard let clip = try? PoseDecoder.decode(SyntheticPoseFixture.encoded()) else { return nil }
@@ -29,11 +30,11 @@ public final class ASLFixtureConversation {
             ? String(repeating: "Sample ", count: 39) + "Do not take the stairs."
             : "Geometric sample caption."
         let speech = ASLFixtureSpeech(sampleText: sampleText)
-        var shouldFail = failsFirstRequest
+        var shouldFail = failsFirstRequest || firstRequestRetryDelay != nil
         let translation = ConversationTranslation<PoseSequence> { _ in
             if shouldFail {
                 shouldFail = false
-                throw SampleRequestUnavailable()
+                throw SampleRequestUnavailable(delay: firstRequestRetryDelay)
             }
             return ConversationTranslationRequest(result: { clip }, cancel: {})
         }
@@ -89,7 +90,11 @@ public final class ASLFixtureConversation {
     }
 }
 
-private struct SampleRequestUnavailable: Error {}
+private struct SampleRequestUnavailable: TranslationRetryAdvising {
+    let delay: Duration?
+
+    func retryDelay(relativeTo date: Date) -> Duration? { delay }
+}
 
 @MainActor
 private final class ASLFixtureSpeech: SpeechBackend {
