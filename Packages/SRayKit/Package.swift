@@ -24,6 +24,6 @@ let package = Package(
         .target(name: "SpeechCore"),
         .target(name: "SpeechPlatform", dependencies: ["SpeechCore"]),
         .testTarget(name: "SpeechCoreTests", dependencies: ["SpeechCore"]),
-        .target(name: "SRayUI", dependencies: ["ConversationCore", "SpeechCore", "SpeechPlatform"])
+        .target(name: "SRayUI", dependencies: ["ConversationCore", "PoseCore", "PosePlayback", "SpeechCore", "SpeechPlatform"])
     ]
 )

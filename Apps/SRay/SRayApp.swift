@@ -13,12 +13,14 @@ struct SRayApp: App {
     #if DEBUG
     private static let runsCaptionAudit = ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_CAPTIONS"] == "1"
         && ProcessInfo.processInfo.environment["SRAY_CAPTION_AUDIT"] == "1"
+    private static let fixture = ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_ASL"] == "1"
+        ? ASLFixtureConversation() : nil
     private static let auditLog = Logger(subsystem: "com.azizbekasadov.sray.audit", category: "fixture")
     #endif
 
     var body: some Scene {
         WindowGroup(id: ConversationView.sceneID) {
-            ConversationView(session: captions)
+            conversationView
                 #if DEBUG
                 .onAppear {
                     if Self.runsCaptionAudit { captions.start() }
@@ -38,9 +40,17 @@ struct SRayApp: App {
             if phase == .background { captions.interrupt() }
         }
     }
+    private var conversationView: ConversationView {
+        #if DEBUG
+        if let fixture = Self.fixture { return ConversationView(fixture: fixture) }
+        #endif
+        return ConversationView(session: captions)
+    }
+
     @MainActor
     private static func makeCaptionSession() -> CaptionSession {
         #if DEBUG
+        if let fixture { return fixture.captions }
         if ProcessInfo.processInfo.environment["SRAY_SYNTHETIC_CAPTIONS"] == "1" {
             return .makeSynthetic()
         }
