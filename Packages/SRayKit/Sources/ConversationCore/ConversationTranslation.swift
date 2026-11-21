@@ -21,6 +21,12 @@ package struct ConversationTranslationRequest<Clip: Sendable> {
     }
 }
 
+/// A supported caption that exceeds a whole-utterance translation limit.
+package enum CaptionTranslationLimit: Equatable, Sendable {
+    case textLength
+    case speechDuration
+}
+
 package struct ConversationTranslationPresentation<Clip: Sendable> {
     package let state: TranslationGateState
     package let ready: PreparedTranslation<Clip>?
@@ -28,13 +34,14 @@ package struct ConversationTranslationPresentation<Clip: Sendable> {
     package let canReplay: Bool
     package let serviceFailed: Bool
     package let omissions: [UUID: TranslationOmission.Reason]
+    package let captionLimits: [UUID: CaptionTranslationLimit]
 }
 
 /// Connects caption lifecycle events and explicit controls to a conversation-scoped pipeline.
 @MainActor @Observable
 package final class ConversationTranslation<Clip: Sendable> {
     package private(set) var presentation = ConversationTranslationPresentation<Clip>(
-        state: .idle, ready: nil, playing: nil, canReplay: false, serviceFailed: false, omissions: [:]
+        state: .idle, ready: nil, playing: nil, canReplay: false, serviceFailed: false, omissions: [:], captionLimits: [:]
     )
     /// Aggregates the outcomes of the active conversation in memory.
     @ObservationIgnored package private(set) var evaluation = TranslationEvaluationSummary()
@@ -47,6 +54,7 @@ package final class ConversationTranslation<Clip: Sendable> {
     @ObservationIgnored private var serviceFailed = false
     @ObservationIgnored private var awaitingCaptions: [UInt64: AwaitingCaption] = [:]
     @ObservationIgnored private var omissions: [UUID: TranslationOmission.Reason] = [:]
+    @ObservationIgnored private var captionLimits: [UUID: CaptionTranslationLimit] = [:]
     @ObservationIgnored private var expiryTask: Task<Void, Never>?
     @ObservationIgnored private var pending: PendingRequest?
     @ObservationIgnored private lazy var pipeline = TranslationPipeline<Clip>(
@@ -90,6 +98,7 @@ package final class ConversationTranslation<Clip: Sendable> {
                 return AwaitingCaption(id: nil, finalizedAt: caption.finalizedAt)
             }
             omissions = omissions.filter { ids.contains($0.key) }
+            captionLimits = captionLimits.filter { ids.contains($0.key) }
         case .closed(let interrupted):
             origin = nil
             ledger = nil
@@ -97,6 +106,7 @@ package final class ConversationTranslation<Clip: Sendable> {
             awaitingCaptions.removeAll()
             evaluation = TranslationEvaluationSummary()
             omissions.removeAll()
+            captionLimits.removeAll()
             if interrupted { pipeline.interrupt() } else { pipeline.endConversation() }
         }
         publish()
@@ -150,9 +160,17 @@ package final class ConversationTranslation<Clip: Sendable> {
         sequence += 1
         guard ledger?.begin(sequence: sequence, startedAt: start, window: window) == true,
               let final = ledger?.finalize(sequence: sequence, text: text, endedAt: end, window: window) else { return }
-        guard case .eligible = final.eligibility else { return }
-        awaitingCaptions[final.sequence] = AwaitingCaption(id: id, finalizedAt: finalizedAt)
-        record(pipeline.enqueue(final, finalizedAt: finalizedAt, at: finalizedAt))
+        switch final.eligibility {
+        case .eligible:
+            awaitingCaptions[final.sequence] = AwaitingCaption(id: id, finalizedAt: finalizedAt)
+            record(pipeline.enqueue(final, finalizedAt: finalizedAt, at: finalizedAt))
+        case .excluded(.tooLong):
+            captionLimits[id] = .textLength
+        case .excluded(.tooSlow):
+            captionLimits[id] = .speechDuration
+        case .excluded:
+            break
+        }
     }
 
     private func submit(_ text: String, token: SubmissionToken) {
@@ -211,7 +229,7 @@ package final class ConversationTranslation<Clip: Sendable> {
     private func publish() {
         presentation = ConversationTranslationPresentation(
             state: pipeline.state, ready: pipeline.readyForPlayback, playing: pipeline.activePlayback,
-            canReplay: pipeline.canReplay, serviceFailed: serviceFailed, omissions: omissions
+            canReplay: pipeline.canReplay, serviceFailed: serviceFailed, omissions: omissions, captionLimits: captionLimits
         )
 
         expiryTask?.cancel()
