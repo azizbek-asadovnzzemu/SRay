@@ -18,15 +18,16 @@ SRay runs local English captions independently of Sign MT. The current app has n
 
 ## Preflight exercise
 
-Run the existing Swift package suites using synthetic responses. These cover separate parts of the incident path.
+Run the package drill with synthetic speech and a synthetic service failure. It exercises the production caption session, utterance ledger and translation pipeline together.
 
 ```sh
+swift test --package-path Packages/SRayKit --filter OutageRecoveryTests
 swift test --package-path Packages/SRayKit --filter SignMTClientTests
 swift test --package-path Packages/SRayKit --filter TranslationGateTests
 swift test --package-path Packages/SRayKit --filter TranslationQueueTests
 swift test --package-path Packages/SRayKit --filter CaptionSessionTests
 ```
 
-Check that the response boundary distinguishes 429, 5xx, authorization and malformed payloads. Check that pausing rejects late callbacks and permanently closes its queue. Confirm the app-owned caption session runs and clears synthetic text independently.
+The drill requires captions to stay active during the outage and verifies that the final local caption is still readable. It checks that the pending request and queue are omitted, late output is rejected, and a new request requires an explicit resume and fresh speech. The other suites check typed provider responses, queue bounds and transcript cleanup independently.
 
-Repeat the exercise after the transport, queue and renderer are connected. A completed outage drill must record how the app reacted to the injected failure, how captions continued, how late output was rejected, and how fresh speech resumed after explicit action. The component exercise does not establish those integrated outcomes.
+Repeat the exercise on devices after the service and renderer are connected to the app. Record actionable status feedback, continuous captions, late-result rejection and explicit resume. Verify the Retry-After policy with a rate-limit fixture and record whether the first fresh utterance plays within its latency budget.
