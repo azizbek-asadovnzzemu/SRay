@@ -1,4 +1,5 @@
 """Run unsigned Apple builds, simulator app tests and Swift package tests."""
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -58,10 +59,15 @@ def simulator_id(family):
 try:
     if mode in simulator_families:
         family = simulator_families[mode]
-        run(f'{family}: app UI tests', ['xcodebuild', '-project', 'SRay.xcodeproj', '-scheme', 'SRay-iOS',
-            '-destination', f'platform=iOS Simulator,id={simulator_id(family)}',
+        device = simulator_id(family)
+        started = datetime.now().isoformat(sep=' ', timespec='seconds')
+        test_status = run(f'{family}: app UI tests', ['xcodebuild', '-project', 'SRay.xcodeproj', '-scheme', 'SRay-iOS',
+            '-destination', f'platform=iOS Simulator,id={device}',
             '-derivedDataPath', str(output / 'DerivedData'), '-parallel-testing-enabled', 'NO',
             '-testLanguage', 'en', '-testRegion', 'US', 'CODE_SIGNING_ALLOWED=NO', 'test'])
+        if test_status == 0:
+            run(f'{family}: caption artifact audit', [sys.executable, 'scripts/audit_caption_artifacts.py',
+                device, '--since', started])
     elif mode == 'packages':
         for package in packages:
             path = package.parent
