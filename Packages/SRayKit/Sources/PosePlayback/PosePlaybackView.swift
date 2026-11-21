@@ -5,12 +5,20 @@ import SwiftUI
 /// An experimental viewer for an already validated and locally retained clip.
 public struct PosePlaybackView: View {
     private let presentation: PosePresentation
+    private let onFinish: (@MainActor () -> Void)?
     @State private var playhead = PosePlayhead()
     @State private var origin = ContinuousClock.now
 
     /// Creates a stopped viewer. Playing and replaying both require user input.
     public init(presentation: PosePresentation) {
         self.presentation = presentation
+        onFinish = nil
+    }
+
+    /// Creates an automatically played clip whose owner supplies the replay controls.
+    public init(presentation: PosePresentation, onFinish: @escaping @MainActor () -> Void) {
+        self.presentation = presentation
+        self.onFinish = onFinish
     }
 
     public var body: some View {
@@ -34,15 +42,21 @@ public struct PosePlaybackView: View {
                 .onChange(of: elapsed >= sequence.durationSeconds) { _, ended in
                     if ended {
                         playhead.pause(at: elapsedSinceOrigin, duration: sequence.durationSeconds)
+                        onFinish?()
                     }
                 }
             }
 
-            ViewThatFits(in: .horizontal) {
-                HStack { controls }
-                VStack(alignment: .leading) { controls }
+            if onFinish == nil {
+                ViewThatFits(in: .horizontal) {
+                    HStack { controls }
+                    VStack(alignment: .leading) { controls }
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
+        }
+        .onAppear {
+            if onFinish != nil { playhead.play(at: elapsedSinceOrigin) }
         }
         .onDisappear { playhead.pause(at: elapsedSinceOrigin, duration: sequence.durationSeconds) }
     }
