@@ -1,40 +1,74 @@
-# Native app scaffold
+# Build and test SRay on Apple platforms
 
-Issue #7 — original SwiftUI scaffold; integration work remains open.
+Use full Xcode with the iOS and visionOS SDKs. Select that installation as the
+active developer directory and verify the toolchain with `xcodebuild -version`.
+The committed `SRay.xcodeproj` references `Packages/SRayKit` by a
+repository-relative path. The unsigned build uses no external Swift packages or
+developer account.
 
-## Build
-
-Open `SRay.xcodeproj`, select `SRay-iOS` or `SRay-visionOS`, and select a matching destination. The project references `Packages/SRayKit` by a repository-relative path. No dependency download, project generator, signing team or secret is required for unsigned SDK builds. The committed Xcode project is the source of truth.
+## Build from a clean checkout
 
 ```sh
-xcodebuild -project SRay.xcodeproj -scheme SRay-iOS \
-  -destination 'generic/platform=iOS' -derivedDataPath /tmp/sray-ios \
-  CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project SRay.xcodeproj -scheme SRay-visionOS \
-  -destination 'generic/platform=visionOS' -derivedDataPath /tmp/sray-visionos \
-  CODE_SIGNING_ALLOWED=NO build
+git clone --branch develop https://github.com/azizbek-asadovnzzemu/SRay.git
+cd SRay
+xcodebuild -version
+python3 scripts/apple_ci.py ios
+python3 scripts/apple_ci.py visionos
+python3 scripts/apple_ci.py packages
 ```
 
-The iOS target includes both iPhone and iPad device families; visionOS has its own target and scheme. iOS 17 and visionOS 2 are candidate deployment floors pending #4 device evidence. The package's macOS floor is only for host tooling, not product support. Bundle identifiers are development placeholders; signing and distribution are not configured.
+These checks build the unsigned device targets and run host package tests. iOS 17
+and visionOS 2 are the current deployment targets. The supported-device matrix
+will follow [offline speech verification](../feasibility/offline-speech.md).
+
+## Try the conversation in a simulator
+
+Open `SRay.xcodeproj`. Select the `SRay-iOS` scheme for iPhone or iPad, or
+`SRay-visionOS` for Vision Pro. Choose a simulator that has its runtime
+installed. Under **Product → Scheme → Edit Scheme → Run → Arguments**, add one
+environment variable for a Debug run:
+
+| Variable | Value | Scenario |
+| --- | --- | --- |
+| `SRAY_SYNTHETIC_CAPTIONS` | `1` | Start and end a conversation with generated caption text |
+| `SRAY_SYNTHETIC_ASL` | `1` | Start captions, enable the demo, and generate a caption to play and replay a local geometric pose |
+
+Each fixture runs without microphone input or a provider request. Use the
+[caption accessibility guide](accessibility-qa.md) for the iPhone and iPad
+simulator test commands. Keep generated content in any public test screenshots.
+
+## Run on a physical device
+
+1. Pair an approved test device with the Mac and enable Developer Mode on the
+   device. [Enable Developer Mode](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device).
+2. Sign in to Xcode with an Apple Account that can provision that device. In the
+   relevant app target’s **Signing & Capabilities** tab, enable automatic signing
+   and select your team. Use a bundle identifier available to that team. Keep
+   local team and bundle changes out of contribution commits.
+   [Set up physical-device signing](https://developer.apple.com/documentation/xcode/running-your-app-on-simulated-or-physical-devices).
+3. Select the physical device in the same scheme and run the app. If Xcode
+   requests registration, use a team authorized to register the device.
+4. Remove simulator fixture variables from the Run scheme to test live English
+   capture. Select **Start Conversation** to request the microphone and speech
+   permissions. Follow the offline protocol to verify assets, lock and recovery
+   behavior. Record device class, OS build, app revision and the results.
+   [Offline speech protocol](../feasibility/offline-speech.md).
+
+SRay uses on-device recognition for live English captions. Live ASL remains
+unavailable while the service contract, source timing and comprehension are
+under evaluation. The [release evidence roadmap](../ROADMAP.md) tracks
+physical-device and provider validation.
 
 ## Structure and ownership
 
-- `Apps/SRay/SRayApp.swift`: app composition root shared by both native targets.
-- `Packages/SRayKit/Sources/SRayUI`: native SwiftUI presentation, semantic system styling and accessibility-compatible empty state.
-- `Packages/SRayKit/Sources/ConversationCore`: platform-independent conversation capability boundary.
+- `Apps/SRay/SRayApp.swift` composes the shared session for the Apple app targets.
+- `Packages/SRayKit/Sources/SRayUI` contains the conversation windows and controls.
+- `ConversationCore` owns the caption session and coordinated transmission and
+  playback state. SwiftUI sends user actions and observes presentation state.
+- `SpeechPlatform` adapts Apple Speech to the shared `SpeechCore` boundary.
+- `PoseCore` decodes verified pose data and `PosePlayback` renders it.
+- `SignMT` contains the typed transport adapter and is tested independently
+  of the app. Its live-service integration depends on provider authorization.
 
-No original prototype files or third-party assets were imported. This is newly written source under the repository license. There is no web view or production web DOM bridge. The initial screen explicitly reports unavailable conversations; it does not simulate listening, translation or permission success.
-
-Framework-free MVI is the selected fit for the forthcoming conversation feature because pause/stop, speech callbacks and transport completion must share explicit state transitions. Introduce reducer state and injected effects with the actual behavior, rather than a placeholder reducer now. The composition root supplies dependencies; views render state and send intents. SwiftUI/main-actor state owns presentation; immutable Sendable values cross service boundaries.
-
-Speech ownership/lifecycle is tracked in #9, utterance segmentation in #10, and service/pose integration in their respective backlog issues. Those modules will be extracted with real contracts after #2/#4/#5 evidence. This scaffold intentionally contains no microphone or network capability. Issue #7 stays open until the shared service boundaries are integrated and prerequisite platform evidence is resolved.
-
-## Recorded build evidence
-
-Both unsigned generic-device builds passed with Xcode 27.0 and Swift 6 mode. This establishes compilation only. No simulator launch, physical-device session or accessibility runtime check is claimed.
-
-## Verification and review
-
-Use Swift Testing for behavior added to the shared package: Arrange–Act–Assert, deterministic clocks and injected services, state verification, and test doubles beside their interfaces under DEBUG. This static scaffold has no behavior suite; asserting a single enum case or copied UI strings would not establish correctness. Unsigned builds check source compilation and local package integration. Runtime layout, assistive technology, device support and product functionality need later validation.
-
-Review declaration documentation and call-site naming, main-actor UI ownership, clean relative package resolution, both target families and the absence of embedded service credentials. Do not infer readiness for App Store distribution from a successful SDK build.
+See [engineering conventions](../ENGINEERING.md) for isolation, Swift API and
+verification guidance.
