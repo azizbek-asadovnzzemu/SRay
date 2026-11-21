@@ -28,14 +28,14 @@ python3 scripts/apple_ci.py visionos
 python3 scripts/apple_ci.py packages
 ```
 
-The commands above passed in a clean checkout of `develop` at `7f569da` with Xcode 27.2, including 57 Swift test functions. Hosted CI separately checks the configured toolchain.
+On pull requests, Apple CI builds both device targets, runs the shared Swift package tests, and exercises the caption and synthetic pose flows on iPhone and iPad simulators. See the [CI guide](docs/development/continuous-integration.md).
 
-Open `SRay.xcodeproj` and run `SRay-iOS` on an iPhone or iPad simulator. Start Conversation requests microphone and speech access when invoked. English recognition requires an on-device recognizer and available language assets. Follow the [native build guide](docs/development/native-app.md) and [captions guide](docs/development/live-captions.md).
+For a local preview, open `SRay.xcodeproj` and choose `SRay-iOS` on an iPhone or iPad simulator, or `SRay-visionOS` in the visionOS simulator. The [native build and device setup guide](docs/development/native-app.md) covers synthetic fixtures and local signing for hardware QA.
 
 | Area | Current evidence |
 | --- | --- |
-| iPhone and iPad | Native app and packages compile for iOS 17. Simulator launch and start-screen layout were checked with iOS 27.0. |
-| Vision Pro | Native app and packages compile for visionOS 2. Device comfort, input and live caption capture still need hardware testing. |
+| iPhone and iPad | The project targets iOS 17 and newer. Apple CI exercises caption layout, lifecycle and synthetic pose flows on both simulator families. |
+| Vision Pro | The project targets visionOS 2 and newer. Apple CI builds the device target. Physical input, comfort and live capture remain to be verified. |
 | Speech and translation | Swift Testing covers session behavior and synthetic transport data. [Offline capture](docs/feasibility/offline-speech.md) and [ASL evaluation](docs/research/evaluation-protocol.md) remain release gates. |
 
 The [MRSignTranslate prototype](https://github.com/azizbek-asadovnzzemu/MRSignTranslate) is a separate reference project. Its source, archives and third-party assets have not been copied into this repository. Importing any reusable material requires a provenance review and preserved notices.
