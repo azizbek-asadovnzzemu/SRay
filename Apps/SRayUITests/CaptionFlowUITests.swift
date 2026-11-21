@@ -4,6 +4,36 @@ import XCTest
 /// Exercises the public caption controls with an in-process synthetic recognizer.
 @MainActor
 final class CaptionFlowUITests: XCTestCase {
+    /// Viewing the disclosure preserves the existing conversation and its captions.
+    func testASLPrivacyDetailsReturnToTheActiveConversation() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_CAPTIONS"] = "1"
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        start.tap()
+
+        let caption = app.staticTexts["Take the elevator to the second floor."]
+        XCTAssertTrue(caption.waitForExistence(timeout: 5))
+        let details = app.buttons["asl.privacy.details"]
+        XCTAssertTrue(details.isHittable)
+        details.tap()
+
+        let disclosure = app.staticTexts["asl.privacy.provider"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 5))
+        XCTAssertTrue(disclosure.label.contains("Sign MT"))
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "ASL Privacy"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        app.buttons["asl.privacy.close"].tap()
+        XCTAssertTrue(caption.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["caption.end"].exists)
+    }
+
     /// The same local conversation and its controls survive a rotation at the largest text size.
     func testCaptionConversationSurvivesRotationAtLargestTextSize() throws {
         continueAfterFailure = false
