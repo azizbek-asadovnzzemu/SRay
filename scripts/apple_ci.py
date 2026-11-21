@@ -66,6 +66,8 @@ try:
                 '-derivedDataPath', str(output / 'DerivedData'), '-parallel-testing-enabled', 'NO',
                 '-testLanguage', 'en', '-testRegion', 'US', 'CODE_SIGNING_ALLOWED=NO', 'test'])
             if test_status == 0:
+                run(f'{family}: pose caption artifact audit', [sys.executable, 'scripts/audit_caption_artifacts.py',
+                    device, '--last', '3m', '--launch-fixture', '--pose-fixture'])
                 run(f'{family}: caption artifact audit', [sys.executable, 'scripts/audit_caption_artifacts.py',
                     device, '--last', '3m', '--launch-fixture'])
     elif mode == 'packages':

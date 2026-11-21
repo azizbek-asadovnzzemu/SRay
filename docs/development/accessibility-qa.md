@@ -17,3 +17,5 @@ The largest-text case checks that Start is reachable, rotates an active conversa
 All three cases passed on an iPad Pro 11-inch M5 simulator on iOS 27.0. The rotation case also passed on iPhone 18 Pro with the same runtime. The background check uses Home and then reactivates the existing app. It verifies the synthetic caption is cleared and the controls require a fresh start. Apple CI runs these checks on both iOS device families, separately from the package and device SDK builds.
 
 Issue #22 remains open for measuring contrast and testing VoiceOver, Switch Control, Reduce Motion, Reduce Transparency, pointer and gaze/pinch on devices. Repeat the complete conversation flow once playback and the ASL controls are available.
+
+Enable Reduce Transparency in system Accessibility settings. Verify the conversation background and the start and end control areas use a solid surface in both light and dark appearance. Repeat with the largest caption text size and with the local pose demo. Check that controls remain legible above the transcript and that signing motion remains available. Document device, OS, appearance and measured contrast when recording physical evidence.

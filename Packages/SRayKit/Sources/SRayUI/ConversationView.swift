@@ -15,6 +15,8 @@ public struct ConversationView: View {
     #endif
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.openURL) private var openURL
     @State private var windowID = UUID()
@@ -51,6 +53,9 @@ public struct ConversationView: View {
                             .padding()
                             .frame(maxWidth: .infinity)
                     }
+                    .background {
+                        if reduceTransparency { opaqueSurface }
+                    }
                     .safeAreaInset(edge: .bottom, spacing: 0) {
                         if session.canEnd {
                             sessionControls {
@@ -62,7 +67,7 @@ public struct ConversationView: View {
                                 .accessibilityIdentifier("caption.start")
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(.regularMaterial)
+                                .background { controlSurface }
                         }
                     }
                 }
@@ -269,6 +274,19 @@ public struct ConversationView: View {
         }
     }
 
+    private var opaqueSurface: Color {
+        colorScheme == .dark ? .black : .white
+    }
+
+    @ViewBuilder
+    private var controlSurface: some View {
+        if reduceTransparency {
+            opaqueSurface
+        } else {
+            Rectangle().fill(.regularMaterial)
+        }
+    }
+
     private func sessionControls(returnToLive: @escaping () -> Void) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack { controlButtons(returnToLive: returnToLive) }
@@ -279,7 +297,7 @@ public struct ConversationView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal)
         .padding(.vertical, 6)
-        .background(.regularMaterial)
+        .background { controlSurface }
     }
 
     @ViewBuilder
