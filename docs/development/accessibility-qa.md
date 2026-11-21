@@ -19,3 +19,9 @@ All three cases passed on an iPad Pro 11-inch M5 simulator on iOS 27.0. The rota
 Issue #22 remains open for measuring contrast and testing VoiceOver, Switch Control, Reduce Motion, Reduce Transparency, pointer and gaze/pinch on devices. Repeat the complete conversation flow once playback and the ASL controls are available.
 
 Enable Reduce Transparency in system Accessibility settings. Verify the conversation background and the start and end control areas use a solid surface in both light and dark appearance. Repeat with the largest caption text size and with the local pose demo. Check that controls remain legible above the transcript and that signing motion remains available. Document device, OS, appearance and measured contrast when recording physical evidence.
+
+In the Debug pose demo, enable the demo and scroll through the transcript.
+The pause icon stays in the navigation toolbar and is labeled **Pause Demo**
+for VoiceOver. The bottom controls remain the same size while the demo runs. Activate Pause with touch or an assistive control, confirm that
+the transcript remains visible, and use **Resume Demo** to start a fresh
+translation window. Repeat at the largest Dynamic Type size.

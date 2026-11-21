@@ -165,6 +165,50 @@ final class CaptionFlowUITests: XCTestCase {
         XCTAssertFalse(app.buttons["asl.demo.replay"].exists)
     }
 
+    /// The pause action stays reachable while reading captions below the demo panel.
+    func testDemoPauseRemainsReachableAfterScrolling() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["SRAY_SYNTHETIC_ASL"] = "over-limit"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+
+        let start = app.buttons["caption.start"]
+        XCTAssertTrue(start.wait(for: \.isHittable, toEqual: true, timeout: 10))
+        start.tap()
+
+        let enable = app.buttons["asl.demo.enable"]
+        XCTAssertTrue(enable.waitForExistence(timeout: 10))
+        enable.tap()
+        let sample = app.buttons["asl.demo.sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 10))
+        sample.tap()
+
+        let caption = app.staticTexts["caption.latest"]
+        XCTAssertTrue(caption.waitForExistence(timeout: 10))
+        let pause = app.buttons["asl.demo.pause"]
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.buttons["asl.demo.output"].exists)
+        XCTAssertFalse(scroll.buttons["asl.demo.pause"].exists)
+
+        let live = app.staticTexts["caption.live"]
+        let originalPosition = live.frame.minY
+        let window = app.windows.firstMatch
+        let readAreaBottom = app.buttons["Return to Live"].frame.minY
+        let origin = window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+        let dragStart = origin.withOffset(CGVector(dx: 0, dy: readAreaBottom - 35))
+        let dragEnd = origin.withOffset(CGVector(dx: 0, dy: readAreaBottom * 0.45))
+        dragStart.press(forDuration: 0.05, thenDragTo: dragEnd)
+
+        XCTAssertLessThan(live.frame.minY, originalPosition - 40)
+        XCTAssertTrue(pause.isHittable)
+        XCTAssertEqual(pause.label, "Pause Demo")
+        pause.tap()
+        XCTAssertTrue(caption.exists)
+        XCTAssertTrue(enable.waitForExistence(timeout: 10))
+        XCTAssertEqual(enable.label, "Resume Demo")
+    }
+
     /// The same local conversation and its controls survive a rotation at the largest text size.
     func testCaptionConversationSurvivesRotationAtLargestTextSize() throws {
         continueAfterFailure = false

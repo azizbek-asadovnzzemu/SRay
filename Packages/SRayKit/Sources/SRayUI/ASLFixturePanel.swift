@@ -18,10 +18,7 @@ struct ASLFixturePanel: View {
             status(for: presentation.state, failed: presentation.serviceFailed)
                 .accessibilityIdentifier("asl.demo.status")
 
-            if presentation.state == .enabled {
-                Button("Pause Demo", systemImage: "pause", action: translation.pause)
-                    .accessibilityIdentifier("asl.demo.pause")
-            } else {
+            if presentation.state != .enabled {
                 Button(presentation.state == .paused ? "Resume Demo" : "Enable Demo",
                        systemImage: "play", action: fixture.enableDemo)
                     .accessibilityIdentifier("asl.demo.enable")
